@@ -1,0 +1,19 @@
+**/settings/Mainnet.toml
+**/settings/Testnet.toml
+.cache/**
+history.txt
+
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+coverage
+*.info
+costs-reports.json
+node_modules
+
+# Keep the Clarinet-generated workspace configuration in the repository even
+# when a developer's global Git ignore excludes VS Code settings.
+!.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json

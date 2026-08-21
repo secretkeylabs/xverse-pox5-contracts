@@ -1,0 +1,24 @@
+{
+  "name": "xverse-pox5-contracts-tests",
+  "version": "1.0.0",
+  "description": "Clarity smart contracts for Xverse PoX-5 integrations.",
+  "type": "module",
+  "private": true,
+  "packageManager": "bun@1.4.0",
+  "scripts": {
+    "check": "clarinet check",
+    "test": "vitest run",
+    "test:report": "vitest run -- --coverage --costs",
+    "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"bun run test:report\""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@stacks/clarinet-sdk": "^3.9.0",
+    "@stacks/transactions": "^7.2.0",
+    "@types/node": "^24.4.0",
+    "chokidar-cli": "^3.0.0",
+    "vitest": "^4.1.8",
+    "vitest-environment-clarinet": "^3.0.0"
+  }
+}
