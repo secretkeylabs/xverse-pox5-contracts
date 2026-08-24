@@ -6,7 +6,8 @@
   "private": true,
   "packageManager": "bun@1.4.0",
   "scripts": {
-    "check": "clarinet check",
+    "check": "clarinet check && bun run check:types",
+    "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"bun run test:report\""
@@ -20,5 +21,8 @@
     "chokidar-cli": "^3.0.0",
     "vitest": "^4.1.8",
     "vitest-environment-clarinet": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ESNext"],
+    "types": ["node", "vitest/globals"],
     "skipLibCheck": true,
 
     "moduleResolution": "bundler",
@@ -19,7 +20,8 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "node_modules/@stacks/clarinet-sdk/vitest-helpers/src",
+    "node_modules/@stacks/clarinet-sdk/vitest-helpers/src/global.d.ts",
+    "node_modules/@stacks/clarinet-sdk/vitest-helpers/src/vitest.d.ts",
     "tests"
   ]
 }

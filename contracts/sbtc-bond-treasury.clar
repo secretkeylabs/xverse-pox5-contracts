@@ -1,0 +1,50 @@
+;; Xverse sBTC Bond Treasury - canonical lane-0 source
+;;
+;; Holds the sBTC principal for `.sbtc-bond-staker-0`. The generated six-lane
+;; suite rewrites only the lane id and paired contract names. Rewards never
+;; enter this contract: any sBTC held by the staker is reward, while all queued
+;; and released member principal is held here.
+;;
+;; Adapted from fastpool/sbtc-pool-bond-staker at
+;; d8406b725b231d899dfad4d92393422559cd0eda (ISC).
+
+(define-constant ERR_UNAUTHORIZED (err u200))
+
+;; Canonical lane-0 controller. Generation rewrites the suffix for other lanes.
+(define-constant CONTROLLER .sbtc-bond-staker-0)
+
+(define-read-only (get-balance)
+  (unwrap-panic (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
+    get-balance current-contract
+  ))
+)
+
+(define-read-only (get-controller)
+  CONTROLLER
+)
+
+;; Send accounted principal only when the paired staker asks. The staker calls
+;; this to fund PoX-5, refund a queued/cancelled deposit, or pay released
+;; principal. There is deliberately no bridge authority or BTC withdrawal path.
+(define-public (payout
+    (amount uint)
+    (recipient principal)
+  )
+  (begin
+    (asserts! (is-eq contract-caller CONTROLLER) ERR_UNAUTHORIZED)
+    (try! (as-contract?
+      ((with-ft 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token "sbtc-token"
+        amount
+      ))
+      (try! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
+        transfer amount tx-sender recipient none
+      ))
+    ))
+    (print {
+      topic: "payout",
+      amount: amount,
+      recipient: recipient,
+    })
+    (ok amount)
+  )
+)

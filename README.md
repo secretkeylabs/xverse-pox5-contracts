@@ -1,47 +1,92 @@
 # Xverse PoX-5 Contracts
 
-Clarity smart contracts for Xverse PoX-5 integrations.
+Clarity contracts for Xverse pooled sBTC participation in PoX-5 protocol
+bonds.
 
-## Prerequisites
+## TASK-001 scope
 
-- [Clarinet](https://docs.stacks.co/clarinet) 3.23.1 or newer
-- [Bun](https://bun.sh/) 1.4.0 or newer
-- Docker, only when running a local Devnet
+The current canonical implementation is the lane-0 development pair:
 
-## Setup
+- `sbtc-bond-treasury-0` — holds queued and released member sBTC principal;
+- `sbtc-bond-staker-0` — deposits, full-position rollover commitments, epochs,
+  rewards, exits, claims, operators, and PoX-5 registration.
 
-```sh
-bun install
+The source files omit a lane suffix so they remain the canonical files reviewed
+and transformed by the six-lane generator planned in TASK-002:
+
+- `contracts/sbtc-bond-treasury.clar`
+- `contracts/sbtc-bond-staker.clar`
+
+The deployed contract names are externally significant. TASK-002 will generate
+six isolated pairs whose staker principals are:
+
+```text
+<Xverse>.sbtc-bond-staker-0
+<Xverse>.sbtc-bond-staker-1
+<Xverse>.sbtc-bond-staker-2
+<Xverse>.sbtc-bond-staker-3
+<Xverse>.sbtc-bond-staker-4
+<Xverse>.sbtc-bond-staker-5
 ```
+
+## Accounting model
+
+The first bond accepts ordinary sBTC deposits and automatically collects its
+required STX. Every later bond requires a member transaction:
+
+```clarity
+(commit-rollover (additional-sats uint))
+```
+
+A commitment reserves the member's complete existing position plus any added
+sats. It uses all STX already attributed to that member and collects a
+shortfall when the next bond requires more. Reservations consume the next
+bond's allowance first-come-first-served.
+
+At rollover:
+
+- committed members carry their complete target and receive one share per sat;
+- members without a commitment receive no next-epoch shares and have all old
+  sBTC and STX principal released;
+- excess STX belonging to a committed member remains carried and member-owned;
+- prior-epoch and delayed final-cycle rewards remain claimable under the old
+  epoch's shares.
+
+There is no proportional best-effort rollover or partial commitment.
+
+## Deliberate exclusions
+
+The suite has no:
+
+- L1 Bitcoin bridge or BTC-address withdrawal;
+- Esbee DAO contract;
+- generic STX-only top-up;
+- passive or partial rollover;
+- sponsorship;
+- cross-lane balance or aggregate receipt.
+
+Users enter and leave using sBTC and STX on Stacks. Operator and signer-manager
+controls cannot move accounted member principal.
 
 ## Development
 
-Create a contract and its test file:
+Requirements:
 
-```sh
-clarinet contracts new <contract-name>
-```
+- Clarinet 3.23.1 or newer
+- Bun 1.4.0 or newer
 
-Check all contracts:
-
-```sh
+```bash
+bun install
 bun run check
-```
-
-Run tests:
-
-```sh
 bun run test
+bun run test:report
 ```
 
-Other useful commands:
+The tests use the real simnet PoX-5 contract and sBTC protocol contracts. The
+local signer manager is a test fixture only.
 
-```sh
-bun run test:watch       # rerun tests after contract or test changes
-bun run test:report      # include Clarinet coverage and cost reports
-clarinet console         # open the interactive Clarity REPL
-clarinet format          # format Clarity source files
-clarinet devnet start    # start a local Devnet (requires Docker)
-```
+## Provenance
 
-Contract sources belong in `contracts/`, with TypeScript tests in `tests/`.
+The treasury and staker are adapted from the ISC-declared
+`fastpool/sbtc-pool-bond-staker` project at revision
+`d8406b725b231d899dfad4d92393422559cd0eda`. See [NOTICE.md](NOTICE.md).
