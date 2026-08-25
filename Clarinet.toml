@@ -32,7 +32,7 @@ path = "contracts/test-caller.clar"
 clarity_version = 6
 epoch = "4.0"
 
-# BEGIN TASK-002 GENERATED LANES
+# BEGIN GENERATED LANES
 # Generated from the reviewed canonical sources by `bun run generate`.
 # Do not edit lane entries directly; `bun run check:generated` rejects drift.
 
@@ -95,4 +95,4 @@ epoch = "4.0"
 path = "contracts/generated/simnet/sbtc-bond-staker-5.clar"
 clarity_version = 6
 epoch = "4.0"
-# END TASK-002 GENERATED LANES
+# END GENERATED LANES

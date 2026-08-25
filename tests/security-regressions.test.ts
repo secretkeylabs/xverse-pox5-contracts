@@ -79,7 +79,7 @@ function prepareDelayedReplacement(additionalSats = 0) {
   return { delayed, unlockHeight };
 }
 
-describe("DEC-005 reward flooring and funded reserve", () => {
+describe("reward flooring and funded reserve", () => {
   it("permanently locks repeated half-satoshi member entitlements after settlement", () => {
     stakeFirstBond([
       [alice, 1],
@@ -158,7 +158,7 @@ describe("DEC-005 reward flooring and funded reserve", () => {
   });
 });
 
-describe("DEC-006 effective sender behavior", () => {
+describe("effective sender behavior", () => {
   it("preserves a standard origin through an ordinary forwarding contract", () => {
     bootstrap();
     const aliceBefore = sbtcBalance(alice);

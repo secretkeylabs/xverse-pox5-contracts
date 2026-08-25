@@ -212,8 +212,7 @@ guarantee every wallet frontend can construct each transaction form. Users
 must treat an ordinary forwarding contract as transaction-scoped authority to
 use their currently available pool operations.
 
-See [SECURITY.md](SECURITY.md) for the complete trust boundary and
-[REVIEW-DISPOSITION.md](REVIEW-DISPOSITION.md) for the canonical review matrix.
+See [SECURITY.md](SECURITY.md) for the complete trust boundary.
 
 ## Deliberate exclusions
 
@@ -265,9 +264,10 @@ requires 67/67 canonical-equivalent functions, all 20 public cost paths, and 42
 critical per-lane cost paths.
 
 Local signer managers and caller-context contracts are test fixtures only and
-are not production generation inputs. See [AUDIT-SCOPE.md](AUDIT-SCOPE.md) for
-the exact reviewed inputs, generated mainnet hashes, protocol pins, exclusions,
-and validation revision.
+are not production generation inputs. Exact generated hashes and protocol
+principals are recorded in `generated/artifact-manifest.json`; deployment
+boundaries and exclusions are documented in [DEPLOYMENT.md](DEPLOYMENT.md) and
+[SECURITY.md](SECURITY.md).
 
 ## Provenance
 

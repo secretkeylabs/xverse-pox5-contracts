@@ -71,8 +71,8 @@ const GENERATED_CONTRACTS_DIR = "contracts/generated";
 const GENERATED_METADATA_DIR = "generated";
 const CLARINET_PATH = "Clarinet.toml";
 const SIMNET_PLAN_PATH = "deployments/default.simnet-plan.yaml";
-const BLOCK_START = "# BEGIN TASK-002 GENERATED LANES";
-const BLOCK_END = "# END TASK-002 GENERATED LANES";
+const BLOCK_START = "# BEGIN GENERATED LANES";
+const BLOCK_END = "# END GENERATED LANES";
 const SOURCE_NETWORK = NETWORKS.simnet;
 
 const UNRESOLVED_PATTERNS = [

@@ -100,6 +100,6 @@ they invoke.
 inputs. `contracts/generated/` contains deterministic deployable derivatives;
 every derivative must match `generated/artifact-manifest.json` under
 `bun run check:generated`. Contracts prefixed `test-` and
-`deployments/default.simnet-plan.yaml` are simnet-only. No lane artifact may be
-generated from a revision older than validated TASK-010 commit
-`1c40228765dabbcaa47809183d3cf17e9d498c20`.
+`deployments/default.simnet-plan.yaml` are simnet-only. Every lane artifact must derive from canonical source revision
+`1c40228765dabbcaa47809183d3cf17e9d498c20`, as pinned in its generated header
+and `generated/artifact-manifest.json`.

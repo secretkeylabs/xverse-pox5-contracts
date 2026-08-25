@@ -1,7 +1,7 @@
 # Six-lane deployment inputs
 
-TASK-002 generates deterministic, non-broadcast deployment inputs from canonical
-revision `1c40228765dabbcaa47809183d3cf17e9d498c20`.
+The deterministic generator creates non-broadcast deployment inputs from
+canonical revision `1c40228765dabbcaa47809183d3cf17e9d498c20`.
 
 ## Exact contract and principal forms
 
