@@ -1,5 +1,9 @@
 # Third-party notices
 
+The Xverse PoX-5 contracts repository is distributed under the MIT License.
+The following provenance notices identify adapted third-party source and do not
+erase any applicable upstream notice.
+
 The canonical Xverse sBTC bond treasury and staker are adapted from
 [`fastpool/sbtc-pool-bond-staker`](https://github.com/fastpool/sbtc-pool-bond-staker)
 revision `d8406b725b231d899dfad4d92393422559cd0eda`.

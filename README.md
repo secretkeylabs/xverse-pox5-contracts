@@ -274,3 +274,8 @@ and validation revision.
 The treasury and staker are adapted from the ISC-declared
 `fastpool/sbtc-pool-bond-staker` project at revision
 `d8406b725b231d899dfad4d92393422559cd0eda`. See [NOTICE.md](NOTICE.md).
+
+## License
+
+This repository is licensed under the [MIT License](LICENSE). Third-party
+provenance is recorded in [NOTICE.md](NOTICE.md).
