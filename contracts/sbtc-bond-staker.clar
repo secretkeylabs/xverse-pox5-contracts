@@ -1052,8 +1052,8 @@
     ;; The treasury payout below temporarily places member principal in this
     ;; contract before PoX-5 calls the signer manager and takes custody. Keep
     ;; every public mutator closed until both protocol and local accounting
-    ;; have committed, so a nested validation callback cannot see that balance
-    ;; as rewards or alter state cached above.
+    ;; have committed, so a nested validation callback cannot credit that
+    ;; balance as rewards or alter state cached above.
     (var-set protocol-transition-active true)
 
     ;; PoX-5 transfers only the net sBTC difference for this same principal.

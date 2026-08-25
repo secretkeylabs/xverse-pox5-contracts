@@ -19,9 +19,11 @@ import {
   poolTotals,
   readPox,
   registerSignerManager,
+  revokeSignerGrant,
   sbtcBalance,
   setCallbackTarget,
   setValidationMode,
+  settleMember,
   settledMember,
   stake,
   stakeFirstBond,
@@ -40,6 +42,7 @@ const INITIAL_SATS = 10_000_000;
 const ADDED_SATS = 2_000_000;
 const TARGET_SATS = INITIAL_SATS + ADDED_SATS;
 const TRANSITION_ERROR = 134;
+const POX_SIGNER_GRANT_NOT_FOUND = 17;
 
 function prepareGrowingRollover() {
   stakeFirstBond([[alice, INITIAL_SATS]], CALLBACK_MANAGER);
@@ -122,6 +125,38 @@ describe("PoX signer callback transition guard", () => {
     // The transition guard is cleared after the update.
     expect(payRewards(rewardPayer, 100_000).type).toBe("ok");
     expect(syncRewards().type).toBe("ok");
+  });
+
+  it("rolls back a successful callback when PoX later rejects the signer grant", () => {
+    const { cutoff } = prepareGrowingRollover();
+    expect(setValidationMode(1).type).toBe("ok");
+    expect(revokeSignerGrant().type).toBe("ok");
+
+    advanceToBurnHeight(cutoff);
+    expect(stake(deployer, CALLBACK_MANAGER)).toBeErr(
+      Cl.uint(POX_SIGNER_GRANT_NOT_FOUND),
+    );
+
+    // The manager recorded u134 during validation, but its write is part of
+    // the failed outer transaction and must roll back with the payout.
+    expect(Number(validationState().errors["sync-rewards"])).toBe(0);
+    expect(Number(poolConfig()["epoch-count"])).toBe(1);
+    expect(Number(poolTotals()["committed-sats"])).toBe(TARGET_SATS);
+    expect(Number(poolTotals()["queued-sats"])).toBe(ADDED_SATS);
+    expect(Number(poolTotals()["total-credited"])).toBe(0);
+    expect(Number(poolTotals()["unclaimed-rewards"])).toBe(0);
+    const aliceRecord = settledMember(alice);
+    expect(Number(aliceRecord.shares)).toBe(INITIAL_SATS);
+    expect(Number(aliceRecord["bonded-sats"])).toBe(INITIAL_SATS);
+    expect(Number(aliceRecord["queued-sats"])).toBe(ADDED_SATS);
+    expect(treasuryBalance()).toBe(ADDED_SATS);
+    expect(sbtcBalance(poolPrincipal())).toBe(0);
+    expect(Number(poxMembership()["bond-index"])).toBe(BOND_INDEX);
+    expect(Number(poxMembership()["amount-sats"])).toBe(INITIAL_SATS);
+
+    // A public write succeeds after the failed transition, proving the flag
+    // rolled back even though the signer grant intentionally remains revoked.
+    expect(settleMember(alice).type).toBe("ok");
   });
 
   it.each([

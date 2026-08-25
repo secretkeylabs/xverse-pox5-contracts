@@ -3,6 +3,7 @@ import {
   ClarityValue,
   cvToValue,
   privateKeyToPublic,
+  publicKeyToAddress,
   signMessageHashRsv,
 } from "@stacks/transactions";
 
@@ -116,6 +117,20 @@ export function registerSignerManager(name = MANAGER, authId = 1) {
       Cl.bufferFromHex(signature),
     ],
     deployer,
+  ).result;
+}
+
+export function revokeSignerGrant(name = CALLBACK_MANAGER) {
+  const signerKey = privateKeyToPublic(SIGNER_PRIVATE_KEYS[name]);
+  const signer = publicKeyToAddress(signerKey, "testnet");
+  return simnet.callPublicFn(
+    POX5,
+    "revoke-signer-grant",
+    [
+      Cl.principal(managerPrincipal(name)),
+      Cl.bufferFromHex(signerKey as unknown as string),
+    ],
+    signer,
   ).result;
 }
 
