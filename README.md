@@ -218,8 +218,6 @@ See [SECURITY.md](SECURITY.md) for the complete trust boundary.
 
 The suite has no:
 
-- L1 Bitcoin bridge or BTC-address withdrawal;
-- Esbee DAO contract;
 - generic STX-only top-up;
 - passive or partial rollover;
 - contract-specific sponsorship or delegated-caller state;
@@ -268,14 +266,3 @@ are not production generation inputs. Exact generated hashes and protocol
 principals are recorded in `generated/artifact-manifest.json`; deployment
 boundaries and exclusions are documented in [DEPLOYMENT.md](DEPLOYMENT.md) and
 [SECURITY.md](SECURITY.md).
-
-## Provenance
-
-The treasury and staker are adapted from the ISC-declared
-`fastpool/sbtc-pool-bond-staker` project at revision
-`d8406b725b231d899dfad4d92393422559cd0eda`. See [NOTICE.md](NOTICE.md).
-
-## License
-
-This repository is licensed under the [MIT License](LICENSE). Third-party
-provenance is recorded in [NOTICE.md](NOTICE.md).
