@@ -57,12 +57,15 @@ There is no proportional best-effort rollover or partial commitment.
 ## Commitment timing and principal recovery
 
 The commitment cutoff is the later of the configured stake-window opening and
-the end of the binding notice period. Commitments and direct commitment
-cancellations require a burn height strictly below that cutoff. A bond binding
-is rejected unless its cutoff leaves at least one executable block before
-PoX-5's prepare phase freezes the target cycle. `get-bound-bond` exposes that
-exclusive limit as `stake-closes-at`, and `stakeable` becomes false when it is
-reached.
+the end of the binding notice period. Commitments require a burn height
+strictly below that cutoff. Direct cancellation has the same cutoff while the
+bond remains stakeable, but reopens if the bond becomes unstakeable; stale
+commitments are also cancellable. A bond binding is rejected unless its cutoff
+leaves at least one executable block before PoX-5's prepare phase freezes the
+target cycle. `get-bound-bond` exposes that exclusive limit as
+`stake-closes-at`, and `stakeable` becomes false when it is reached. Initial
+deposits close at that limit, while previously queued initial principal remains
+withdrawable.
 
 Before the cutoff, `cancel-rollover-commitment` refunds the sBTC and STX added
 by a commitment and releases its complete allowance reservation. After direct
@@ -74,6 +77,10 @@ successful stake consumes the commitment:
 - for a newcomer with no old bonded position, it refunds the complete queued
   contribution and returns `exit-epoch: none` without creating an exit
   liability.
+
+The `request-exit` response and event expose `exit-epoch` as `(optional uint)`:
+`some` identifies the incumbent epoch marked for release, while `none` means
+newcomer recovery created no exit liability. Clients must decode both forms.
 
 The `queued-sats` and `queued-ustx` fields returned by
 `get-claimable-principal` describe assets supplied for a pending bond; they are

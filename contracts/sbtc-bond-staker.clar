@@ -889,7 +889,9 @@
     (try! (assert-no-protocol-transition))
     (asserts! (is-eq (var-get epoch-count) u0) ERR_POSITION_ACTIVE)
     (asserts! (var-get bond-bound) ERR_NO_BOND_BOUND)
-    (asserts! (< burn-block-height (var-get pending-start-height)) ERR_TOO_LATE)
+    ;; Do not take custody once PoX-5's prepare phase makes this binding
+    ;; unexecutable. Existing initial queues remain withdrawable after closure.
+    (asserts! (< burn-block-height (var-get pending-stake-deadline)) ERR_TOO_LATE)
     (asserts! (> sats u0) ERR_INVALID_AMOUNT)
     (asserts! (<= (+ (var-get queued-sats) sats) (var-get pending-max-sats))
       ERR_ALLOCATION_EXCEEDED

@@ -99,6 +99,48 @@ describe("Xverse lane-0 initialization and launch", () => {
     expect(stxBalance(alice)).toBe(stxBefore);
   });
 
+  it("closes initial deposits at the executable stake deadline without blocking withdrawal", () => {
+    bootstrap();
+    const deadline = Number(boundBond()["stake-closes-at"]);
+    const aliceSbtc = sbtcBalance(alice);
+    const aliceStx = stxBalance(alice);
+
+    advanceToBurnHeight(deadline - 1);
+    expect(deposit(alice, ALICE_SATS).type).toBe("ok");
+    expect(Number(poolTotals()["queued-sats"])).toBe(ALICE_SATS);
+
+    advanceToBurnHeight(deadline);
+    const atDeadlinePool = poolTotals();
+    const bobSbtc = sbtcBalance(bob);
+    const bobStx = stxBalance(bob);
+    expect(deposit(bob, BOB_SATS)).toBeErr(Cl.uint(109));
+    expect(poolTotals()).toEqual(atDeadlinePool);
+    expect(treasuryBalance()).toBe(ALICE_SATS);
+    expect(member(bob)).toBeNull();
+    expect(sbtcBalance(bob)).toBe(bobSbtc);
+    expect(stxBalance(bob)).toBe(bobStx);
+
+    advanceToBurnHeight(deadline + 1);
+    const afterDeadlinePool = poolTotals();
+    const carolSbtc = sbtcBalance(carol);
+    const carolStx = stxBalance(carol);
+    expect(deposit(carol, ALICE_SATS)).toBeErr(Cl.uint(109));
+    expect(poolTotals()).toEqual(afterDeadlinePool);
+    expect(treasuryBalance()).toBe(ALICE_SATS);
+    expect(member(carol)).toBeNull();
+    expect(sbtcBalance(carol)).toBe(carolSbtc);
+    expect(stxBalance(carol)).toBe(carolStx);
+
+    expect(withdraw(alice).type).toBe("ok");
+    expect(poolTotals()).toMatchObject({
+      "queued-sats": "0",
+      "queued-ustx": "0",
+    });
+    expect(treasuryBalance()).toBe(0);
+    expect(sbtcBalance(alice)).toBe(aliceSbtc);
+    expect(stxBalance(alice)).toBe(aliceStx);
+  });
+
   it("enforces the bound allowance on initial deposits", () => {
     bootstrap(ALICE_SATS);
     expect(deposit(alice, ALICE_SATS).type).toBe("ok");
@@ -384,6 +426,14 @@ describe("commitment cancellation and exits", () => {
     expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(true);
 
     advanceToBurnHeight(cutoff);
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
+    expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(133));
+
+    advanceToBurnHeight(cutoff + 1);
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
+    expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(133));
+
+    advanceToBurnHeight(start - 1);
     expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
     expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(133));
 
