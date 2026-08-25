@@ -70,3 +70,8 @@ functions. The largest observed cost fraction was 5.8133% of the read-count
 limit (`update-bond-registration`). Clarinet reported nine accepted warnings
 covered by the table above. Every retained public financial/control path is
 exercised directly or through a public operation that invokes it.
+
+TASK-002 loads six generated copies of each production contract, so Clarinet
+repeats the same accepted production warning classes per lane. The generated
+suite adds no new warning class; its higher aggregate warning count is not six
+new finding sets.

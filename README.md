@@ -11,14 +11,21 @@ The reviewed canonical implementation is the lane-0 development pair:
 - `sbtc-bond-staker-0` — deposits, full-position rollover commitments, epochs,
   rewards, exits, claims, operators, and PoX-5 registration.
 
-The source files omit a lane suffix so they remain the canonical files reviewed
-and transformed by the six-lane generator planned in TASK-002:
+The source files omit a lane suffix so they remain the only canonical
+production inputs reviewed and transformed by the deterministic six-lane
+generator:
 
 - `contracts/sbtc-bond-treasury.clar`
 - `contracts/sbtc-bond-staker.clar`
 
-The deployed contract names are externally significant. TASK-002 will generate
-six isolated pairs whose staker principals are:
+`bun run generate` emits byte-pinned simnet, testnet, and mainnet variants under
+`contracts/generated/`. Generated files must not be edited directly;
+`bun run check:generated` rejects drift and invalid lane, sibling, placeholder,
+or protocol-principal output. Canonical source and artifact hashes are recorded
+in `generated/artifact-manifest.json`.
+
+The deployed contract names are externally significant. The six isolated
+staker principals are:
 
 ```text
 <Xverse>.sbtc-bond-staker-0
@@ -28,6 +35,12 @@ six isolated pairs whose staker principals are:
 <Xverse>.sbtc-bond-staker-4
 <Xverse>.sbtc-bond-staker-5
 ```
+
+Every lane has a dedicated `sbtc-bond-treasury-X`, references only that sibling,
+and accepts only bond indexes where `index mod 6 = X`. See
+[DEPLOYMENT.md](DEPLOYMENT.md) for exact principal forms, network protocol
+principals, non-broadcast deployment inputs, ordering, and PoX-5 allowlist
+requirements.
 
 ## Accounting model
 
@@ -225,12 +238,21 @@ Requirements:
 
 ```bash
 bun install
+bun run generate
+bun run check:generated
 bun run check
 bun run test
 bun run test:report
 bun run check:format
-# or run all four:
+# or run all non-mutating checks after generation:
 bun run validate
+```
+
+A clean regeneration is byte-identical:
+
+```bash
+bun run generate
+git diff --exit-code -- contracts Clarinet.toml generated deployments/default.simnet-plan.yaml
 ```
 
 The tests use the real simnet PoX-5 contract and sBTC protocol contracts. Local

@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "network": "testnet",
+  "broadcast": false,
+  "description": "Non-broadcast deployment input. Resolve declared inputs in controlled deployment tooling.",
+  "requiredInputs": {
+    "xverseDeployerPrincipal": "Stacks standard principal that publishes all 12 contracts",
+    "signerManagerPrincipal": "deployed and PoX-5-registered signer-manager contract principal",
+    "poolOperatorPrincipal": "initial keyed operator principal"
+  },
+  "stakerPrincipalForms": [
+    "<Xverse>.sbtc-bond-staker-0",
+    "<Xverse>.sbtc-bond-staker-1",
+    "<Xverse>.sbtc-bond-staker-2",
+    "<Xverse>.sbtc-bond-staker-3",
+    "<Xverse>.sbtc-bond-staker-4",
+    "<Xverse>.sbtc-bond-staker-5"
+  ],
+  "operations": [
+    {
+      "order": 1,
+      "type": "contract-publish",
+      "lane": 0,
+      "contractName": "sbtc-bond-treasury-0",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-0.clar",
+      "artifactSha256": "93d67d5cf229525ae2a6876d86df83d962ab11c90ee591ee3535df0446ab8c7c",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 2,
+      "type": "contract-publish",
+      "lane": 0,
+      "contractName": "sbtc-bond-staker-0",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-0.clar",
+      "artifactSha256": "852e4c230dfc6be4eec63a6c51067dfbb721fef0a9cc6e0ae42f74e3fbce348a",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-0"
+      ]
+    },
+    {
+      "order": 3,
+      "type": "contract-call-template",
+      "lane": 0,
+      "contractName": "sbtc-bond-staker-0",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-0"
+      ]
+    },
+    {
+      "order": 4,
+      "type": "contract-publish",
+      "lane": 1,
+      "contractName": "sbtc-bond-treasury-1",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-1.clar",
+      "artifactSha256": "e808f2d7846c4fef5635741fff16a81a256e55bbe8abb529d042812595a56568",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 5,
+      "type": "contract-publish",
+      "lane": 1,
+      "contractName": "sbtc-bond-staker-1",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-1.clar",
+      "artifactSha256": "e025b8f0e3b48e8685cf28b20836aeda6b8c5f26900d4eb52e067277bd37d1f2",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-1"
+      ]
+    },
+    {
+      "order": 6,
+      "type": "contract-call-template",
+      "lane": 1,
+      "contractName": "sbtc-bond-staker-1",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-1"
+      ]
+    },
+    {
+      "order": 7,
+      "type": "contract-publish",
+      "lane": 2,
+      "contractName": "sbtc-bond-treasury-2",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-2.clar",
+      "artifactSha256": "fd2731eb441afef6c405d5c9e1de6c6c27ec3186129d4c4635bf4b03191a9b80",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 8,
+      "type": "contract-publish",
+      "lane": 2,
+      "contractName": "sbtc-bond-staker-2",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-2.clar",
+      "artifactSha256": "740a19bdab8261b2518d584d81a73970c0373fc87e440f26cdf16b6fe9fba331",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-2"
+      ]
+    },
+    {
+      "order": 9,
+      "type": "contract-call-template",
+      "lane": 2,
+      "contractName": "sbtc-bond-staker-2",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-2"
+      ]
+    },
+    {
+      "order": 10,
+      "type": "contract-publish",
+      "lane": 3,
+      "contractName": "sbtc-bond-treasury-3",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-3.clar",
+      "artifactSha256": "87c44c7e046b53cec1092a54c2e1363e6878f174c8fc4382173f4bb38a22453a",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 11,
+      "type": "contract-publish",
+      "lane": 3,
+      "contractName": "sbtc-bond-staker-3",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-3.clar",
+      "artifactSha256": "98716bbe8e7f505bb114e00c6f45d9c48f3283d1b35a69ba7fd4c411e204d43c",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-3"
+      ]
+    },
+    {
+      "order": 12,
+      "type": "contract-call-template",
+      "lane": 3,
+      "contractName": "sbtc-bond-staker-3",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-3"
+      ]
+    },
+    {
+      "order": 13,
+      "type": "contract-publish",
+      "lane": 4,
+      "contractName": "sbtc-bond-treasury-4",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-4.clar",
+      "artifactSha256": "4a92dc6483c12cacc3550c1a43c7427da5406d41e331ceffe5e0f865c65b052d",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 14,
+      "type": "contract-publish",
+      "lane": 4,
+      "contractName": "sbtc-bond-staker-4",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-4.clar",
+      "artifactSha256": "8f2bab03898890d58dd1fb521c4b0365a13e58239efae22f32baf0b11809861a",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-4"
+      ]
+    },
+    {
+      "order": 15,
+      "type": "contract-call-template",
+      "lane": 4,
+      "contractName": "sbtc-bond-staker-4",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-4"
+      ]
+    },
+    {
+      "order": 16,
+      "type": "contract-publish",
+      "lane": 5,
+      "contractName": "sbtc-bond-treasury-5",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-treasury-5.clar",
+      "artifactSha256": "a8b69a1e69624bd2e8de8caad46b1f85c084272079b9b5bcfc55b8ac12ac6ead",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": []
+    },
+    {
+      "order": 17,
+      "type": "contract-publish",
+      "lane": 5,
+      "contractName": "sbtc-bond-staker-5",
+      "artifactPath": "contracts/generated/testnet/sbtc-bond-staker-5.clar",
+      "artifactSha256": "83932e6384f1c090b0028ec3670aef8365ed8d0ac658c5a68e07622e5191695e",
+      "publisherInput": "xverseDeployerPrincipal",
+      "dependsOn": [
+        "sbtc-bond-treasury-5"
+      ]
+    },
+    {
+      "order": 18,
+      "type": "contract-call-template",
+      "lane": 5,
+      "contractName": "sbtc-bond-staker-5",
+      "function": "initialize",
+      "senderInput": "xverseDeployerPrincipal",
+      "arguments": [
+        {
+          "clarityName": "manager",
+          "input": "signerManagerPrincipal"
+        },
+        {
+          "clarityName": "pool-operator",
+          "input": "poolOperatorPrincipal"
+        }
+      ],
+      "dependsOn": [
+        "sbtc-bond-staker-5"
+      ]
+    }
+  ],
+  "allowlistNote": "PoX-5 setup is separate: each bond must allowlist only its matching same-lane staker principal and sats allowance."
+}

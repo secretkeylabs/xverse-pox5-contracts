@@ -32,14 +32,67 @@ path = "contracts/test-caller.clar"
 clarity_version = 6
 epoch = "4.0"
 
-# Canonical lane-0 development pair. TASK-002 generates lanes 0-5 from the
-# same reviewed sources and adds all 12 generated contracts to the manifest.
+# BEGIN TASK-002 GENERATED LANES
+# Generated from the reviewed canonical sources by `bun run generate`.
+# Do not edit lane entries directly; `bun run check:generated` rejects drift.
+
 [contracts.sbtc-bond-treasury-0]
-path = "contracts/sbtc-bond-treasury.clar"
+path = "contracts/generated/simnet/sbtc-bond-treasury-0.clar"
 clarity_version = 6
 epoch = "4.0"
 
 [contracts.sbtc-bond-staker-0]
-path = "contracts/sbtc-bond-staker.clar"
+path = "contracts/generated/simnet/sbtc-bond-staker-0.clar"
 clarity_version = 6
 epoch = "4.0"
+
+[contracts.sbtc-bond-treasury-1]
+path = "contracts/generated/simnet/sbtc-bond-treasury-1.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-staker-1]
+path = "contracts/generated/simnet/sbtc-bond-staker-1.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-treasury-2]
+path = "contracts/generated/simnet/sbtc-bond-treasury-2.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-staker-2]
+path = "contracts/generated/simnet/sbtc-bond-staker-2.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-treasury-3]
+path = "contracts/generated/simnet/sbtc-bond-treasury-3.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-staker-3]
+path = "contracts/generated/simnet/sbtc-bond-staker-3.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-treasury-4]
+path = "contracts/generated/simnet/sbtc-bond-treasury-4.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-staker-4]
+path = "contracts/generated/simnet/sbtc-bond-staker-4.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-treasury-5]
+path = "contracts/generated/simnet/sbtc-bond-treasury-5.clar"
+clarity_version = 6
+epoch = "4.0"
+
+[contracts.sbtc-bond-staker-5]
+path = "contracts/generated/simnet/sbtc-bond-staker-5.clar"
+clarity_version = 6
+epoch = "4.0"
+# END TASK-002 GENERATED LANES

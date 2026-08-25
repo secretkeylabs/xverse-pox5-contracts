@@ -97,6 +97,9 @@ they invoke.
 
 `contracts/sbtc-bond-staker.clar` and
 `contracts/sbtc-bond-treasury.clar` are the only canonical production generation
-inputs. Contracts prefixed `test-` and `deployments/default.simnet-plan.yaml` are
-simnet-only. No lane artifact should be generated from a revision older than the
-validated TASK-010 commit.
+inputs. `contracts/generated/` contains deterministic deployable derivatives;
+every derivative must match `generated/artifact-manifest.json` under
+`bun run check:generated`. Contracts prefixed `test-` and
+`deployments/default.simnet-plan.yaml` are simnet-only. No lane artifact may be
+generated from a revision older than validated TASK-010 commit
+`1c40228765dabbcaa47809183d3cf17e9d498c20`.

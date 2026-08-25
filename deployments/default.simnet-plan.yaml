@@ -74,12 +74,62 @@ plan:
     - transaction-type: emulated-contract-publish
       contract-name: sbtc-bond-treasury-0
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/sbtc-bond-treasury.clar
+      path: contracts/generated/simnet/sbtc-bond-treasury-0.clar
       clarity-version: 6
     - transaction-type: emulated-contract-publish
       contract-name: sbtc-bond-staker-0
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-      path: contracts/sbtc-bond-staker.clar
+      path: contracts/generated/simnet/sbtc-bond-staker-0.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-treasury-1
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-treasury-1.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-staker-1
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-staker-1.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-treasury-2
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-treasury-2.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-staker-2
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-staker-2.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-treasury-3
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-treasury-3.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-staker-3
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-staker-3.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-treasury-4
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-treasury-4.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-staker-4
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-staker-4.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-treasury-5
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-treasury-5.clar
+      clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: sbtc-bond-staker-5
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/generated/simnet/sbtc-bond-staker-5.clar
       clarity-version: 6
     - transaction-type: emulated-contract-publish
       contract-name: test-caller
