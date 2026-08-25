@@ -12,8 +12,11 @@
     "check:types": "tsc --noEmit",
     "check:format": "clarinet format --check",
     "test": "vitest run",
-    "test:report": "vitest run -- --coverage --costs",
-    "validate": "bun run check:generated && bun run check && bun run test && bun run test:report && bun run check:format",
+    "test:lanes": "vitest run tests/generation.test.ts tests/six-lane-integration.test.ts tests/six-lane-rollover.simulation.test.ts",
+    "simulate:rollover": "vitest run tests/six-lane-rollover.simulation.test.ts",
+    "test:report": "vitest run -- --coverage --costs && bun scripts/check-validation-reports.ts",
+    "check:reports": "bun scripts/check-validation-reports.ts",
+    "validate": "bun run check:generated && bun run check && bun run test && bun run test:report && bun run test:lanes && bun run simulate:rollover && bun run check:format",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"bun run test:report\""
   },
   "author": "",

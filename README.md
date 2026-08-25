@@ -242,6 +242,8 @@ bun run generate
 bun run check:generated
 bun run check
 bun run test
+bun run test:lanes
+bun run simulate:rollover
 bun run test:report
 bun run check:format
 # or run all non-mutating checks after generation:
@@ -255,9 +257,17 @@ bun run generate
 git diff --exit-code -- contracts Clarinet.toml generated deployments/default.simnet-plan.yaml
 ```
 
-The tests use the real simnet PoX-5 contract and sBTC protocol contracts. Local
-signer managers and caller-context contracts are test fixtures only and are not
-production generation inputs.
+The tests use the real simnet PoX-5 contract and sBTC protocol contracts. The
+six-lane suite exercises concurrent memberships, every `N -> N+6` rollover,
+exhaustive modulo-lane rejection, treasury authority, lane-local liabilities,
+reward dust, caller contexts, and failure/wind-down isolation. The report check
+requires 67/67 canonical-equivalent functions, all 20 public cost paths, and 42
+critical per-lane cost paths.
+
+Local signer managers and caller-context contracts are test fixtures only and
+are not production generation inputs. See [AUDIT-SCOPE.md](AUDIT-SCOPE.md) for
+the exact reviewed inputs, generated mainnet hashes, protocol pins, exclusions,
+and validation revision.
 
 ## Provenance
 
