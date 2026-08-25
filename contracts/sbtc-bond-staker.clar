@@ -80,6 +80,7 @@
 (define-constant ERR_NOT_COMMITTED (err u131))
 (define-constant ERR_WRONG_LANE (err u132))
 (define-constant ERR_COMMITMENT_CLOSED (err u133))
+(define-constant ERR_PROTOCOL_TRANSITION_ACTIVE (err u134))
 
 ;;; Protocol constants -- these mirror pox-5 and are not deployment knobs
 
@@ -220,6 +221,13 @@
 
 ;; Set by `unstake-sbtc`. The pool never stakes again.
 (define-data-var finished bool false)
+
+;; True only inside a successful transaction while this contract has entered a
+;; PoX-5 transition that may invoke the configured signer manager. Clarity
+;; rolls this write back if any later call fails. Public mutators reject while
+;; it is true so a nested signer callback cannot classify temporary principal
+;; as rewards or change state cached by the outer transition.
+(define-data-var protocol-transition-active bool false)
 
 ;;; Pooled principal
 ;;
@@ -709,6 +717,7 @@
     (pool-operator principal)
   )
   (begin
+    (try! (assert-no-protocol-transition))
     (asserts! (is-eq tx-sender DEPLOYER) ERR_UNAUTHORIZED)
     (asserts! (not (var-get initialized)) ERR_ALREADY_INITIALIZED)
     (asserts!
@@ -758,6 +767,7 @@
     (min-sats uint)
   )
   (begin
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (let (
         (bond (unwrap!
@@ -843,6 +853,7 @@
       (record (settle (get-or-create-member tx-sender) tx-sender))
       (depositor tx-sender)
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (is-eq (var-get epoch-count) u0) ERR_POSITION_ACTIVE)
     (asserts! (var-get bond-bound) ERR_NO_BOND_BOUND)
     (asserts! (< burn-block-height (var-get pending-start-height)) ERR_TOO_LATE)
@@ -875,6 +886,7 @@
       (ustx (get queued-ustx record))
       (depositor tx-sender)
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (is-eq (var-get epoch-count) u0) ERR_POSITION_ACTIVE)
     (asserts! (> (+ sats ustx) u0) ERR_NOTHING_DEPOSITED)
 
@@ -917,6 +929,7 @@
       (total-ustx (+ old-ustx added-ustx))
       (generation (var-get pending-generation))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (> (var-get epoch-count) u0) ERR_NOT_STAKED)
     (asserts! (var-get bond-bound) ERR_NO_BOND_BOUND)
     (asserts! (< burn-block-height (rollover-cutoff)) ERR_COMMITMENT_CLOSED)
@@ -984,6 +997,7 @@
       (generation (unwrap! (map-get? member-live-commitment member) ERR_NOT_COMMITTED))
       (current (is-eq generation (var-get pending-generation)))
     )
+    (try! (assert-no-protocol-transition))
     (asserts!
       (or
         (not current)
@@ -1023,6 +1037,7 @@
         bond-period-to-reward-cycle index
       ))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (var-get bond-bound) ERR_NO_BOND_BOUND)
     (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
     (asserts! (is-eq (contract-of manager) (var-get signer-manager))
@@ -1033,6 +1048,13 @@
     (asserts! (get meets-floor preview) ERR_BELOW_LAUNCH_FLOOR)
     (asserts! (>= burn-block-height (rollover-cutoff)) ERR_TOO_EARLY)
     (asserts! (< burn-block-height (var-get pending-start-height)) ERR_TOO_LATE)
+
+    ;; The treasury payout below temporarily places member principal in this
+    ;; contract before PoX-5 calls the signer manager and takes custody. Keep
+    ;; every public mutator closed until both protocol and local accounting
+    ;; have committed, so a nested validation callback cannot see that balance
+    ;; as rewards or alter state cached above.
+    (var-set protocol-transition-active true)
 
     ;; PoX-5 transfers only the net sBTC difference for this same principal.
     (if (> sats custodied)
@@ -1111,6 +1133,7 @@
       (var-set committed-added-sats u0)
       (var-set committed-added-ustx u0)
       (var-set bond-bound false)
+      (var-set protocol-transition-active false)
 
       (print (merge {
         topic: "stake",
@@ -1136,12 +1159,14 @@
       (live (unwrap! (get-live-epoch) ERR_NOT_STAKED))
       (sats (var-get bonded-sats))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
     (asserts! (is-eq (contract-of manager) (var-get signer-manager))
       ERR_INVALID_SIGNER_MANAGER
     )
     (asserts! (>= burn-block-height (get unlock-burn-height live)) ERR_TOO_EARLY)
 
+    (var-set protocol-transition-active true)
     (var-set finished true)
     (var-set bond-bound false)
     (var-set released-sats (+ (var-get released-sats) sats))
@@ -1170,6 +1195,7 @@
           ))
           unstaked
         )))))
+      (var-set protocol-transition-active false)
       (print (merge { topic: "unstake-sbtc" } result))
       (ok result)
     )
@@ -1185,6 +1211,7 @@
     (old-manager <signer-manager-trait>)
   )
   (begin
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (asserts! (is-some (get-live-epoch)) ERR_NOT_STAKED)
     (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
@@ -1196,6 +1223,7 @@
       ERR_SIGNER_NOT_TRUSTED
     )
 
+    (var-set protocol-transition-active true)
     (var-set signer-manager (contract-of manager))
 
     (let ((result (try! (as-contract?
@@ -1205,6 +1233,7 @@
           update-bond-registration manager old-manager none
         ))
       ))))
+      (var-set protocol-transition-active false)
       (print (merge { topic: "update-bond-registration" } result))
       (ok result)
     )
@@ -1227,6 +1256,7 @@
     (enabled bool)
   )
   (begin
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (asserts! (not (is-eq tx-sender who)) ERR_UNAUTHORIZED)
     (map-set operators who enabled)
@@ -1249,6 +1279,7 @@
 ;; committed to, before it is deployed.
 (define-public (trust-signer-manager (code-hash (buff 32)))
   (let ((trusted-at (var-get epoch-count)))
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     ;; Re-adding must not quietly restart the clock on a hash already pending.
     (asserts! (map-insert trusted-signers code-hash trusted-at)
@@ -1271,6 +1302,7 @@
 ;; winds down.
 (define-public (distrust-signer-manager (code-hash (buff 32)))
   (begin
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (asserts! (map-delete trusted-signers code-hash) ERR_SIGNER_NOT_TRUSTED)
     (print {
@@ -1296,6 +1328,7 @@
       (live-generation (map-get? member-live-commitment member))
       (epoch (var-get epoch-count))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (> epoch u0) ERR_NOT_STAKED)
     (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
     (asserts! (is-none (get exit-epoch before)) ERR_ALREADY_EXITING)
@@ -1344,6 +1377,7 @@
       (member tx-sender)
       (epoch (unwrap! (get exit-epoch record) ERR_NOT_EXITING))
     )
+    (try! (assert-no-protocol-transition))
     ;; A request made during the live epoch is still ahead of its roll; an
     ;; older one has already been realised and cannot be taken back.
     (asserts! (is-eq epoch (- (var-get epoch-count) u1)) ERR_POSITION_ACTIVE)
@@ -1388,6 +1422,7 @@
       (credited (/ (* shares next-index) PRECISION))
       (recognized (- credited (get credited record)))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (> recognized u0) ERR_NOTHING_TO_CLAIM)
 
     (map-set epochs epoch
@@ -1417,6 +1452,7 @@
       (record (settle (unwrap! (map-get? members member) ERR_NOTHING_DEPOSITED) member))
       (amount (get pending record))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (> amount u0) ERR_NOTHING_TO_CLAIM)
 
     (map-set members member (merge record { pending: u0 }))
@@ -1453,6 +1489,7 @@
       (sats (get released-sats record))
       (ustx (get released-ustx record))
     )
+    (try! (assert-no-protocol-transition))
     (asserts! (> (+ sats ustx) u0) ERR_NOTHING_TO_CLAIM)
 
     (map-set members member
@@ -1480,12 +1517,19 @@
 ;; member has sat out more epochs than one settlement can catch up on.
 (define-public (settle-member (member principal))
   (let ((record (settle (unwrap! (map-get? members member) ERR_NOTHING_DEPOSITED) member)))
+    (try! (assert-no-protocol-transition))
     (map-set members member record)
     (ok record)
   )
 )
 
 ;;; Authorization and commitment cancellation
+
+(define-private (assert-no-protocol-transition)
+  (ok (asserts! (not (var-get protocol-transition-active))
+    ERR_PROTOCOL_TRANSITION_ACTIVE
+  ))
+)
 
 (define-private (authorize-operator)
   (ok (asserts! (is-operator tx-sender) ERR_UNAUTHORIZED))
@@ -1562,6 +1606,7 @@
 ;; the balance *above* everything owed.
 (define-public (sweep-unattributed-principal (recipient principal))
   (let ((amount (get-unattributed-principal)))
+    (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (asserts! (> amount u0) ERR_NOTHING_TO_CLAIM)
     (try! (contract-call? .sbtc-bond-treasury-0 payout amount recipient))

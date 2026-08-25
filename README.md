@@ -54,6 +54,28 @@ At rollover:
 
 There is no proportional best-effort rollover or partial commitment.
 
+## Signer callback safety
+
+PoX-5 invokes the configured signer manager while a stake or rollover is still
+executing. On a growing rollover, net member sBTC principal has already moved
+from the treasury to the staker at that point but PoX-5 has not taken custody
+yet. The staker therefore keeps a protocol-transition guard active from before
+the first principal movement through completion of PoX-5 and local accounting.
+
+Every public state-changing staker entry point checks the guard before writing
+and returns error `u134` when a nested callback reaches it while the transition
+is active; Clarity separately rejects direct same-function recursion. Read-only
+inspection remains available. A signer manager must not depend on mutating the
+pool during `validate-stake!`;
+failed outer transitions roll the guard and every asset/counter change back
+atomically. The intended Xverse signer manager's reviewed validation path only
+updates manager-local state and is compatible with this boundary.
+
+The test suite includes an adversarial manager that calls reward, claim,
+settlement, and protocol entry points during validation, including the exact
+growing-rollover sequence that would otherwise recognize temporary principal
+as rewards.
+
 ## Deliberate exclusions
 
 The suite has no:

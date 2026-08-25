@@ -91,4 +91,9 @@ plan:
       emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
       path: contracts/test-signer-manager.clar
       clarity-version: 6
+    - transaction-type: emulated-contract-publish
+      contract-name: test-signer-manager-callback
+      emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+      path: contracts/test-signer-manager-callback.clar
+      clarity-version: 6
     epoch: '4.0'

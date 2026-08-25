@@ -13,6 +13,7 @@ export const POOL = "sbtc-bond-staker-0";
 export const TREASURY = "sbtc-bond-treasury-0";
 export const MANAGER = "test-signer-manager";
 export const ALT_MANAGER = "test-signer-manager-alt";
+export const CALLBACK_MANAGER = "test-signer-manager-callback";
 export const BOND_ADMIN = "ST000000000000000000002AMW42H";
 
 export const CYCLE_LENGTH = 1050;
@@ -28,6 +29,8 @@ const SIGNER_PRIVATE_KEYS: Record<string, string> = {
     "010101010101010101010101010101010101010101010101010101010101010101",
   [ALT_MANAGER]:
     "020202020202020202020202020202020202020202020202020202020202020201",
+  [CALLBACK_MANAGER]:
+    "030303030303030303030303030303030303030303030303030303030303030301",
 };
 
 const accounts = simnet.getAccounts();
@@ -144,11 +147,11 @@ export function setupBond(
   return result;
 }
 
-export const initializePool = (sender = deployer) =>
+export const initializePool = (sender = deployer, manager = MANAGER) =>
   simnet.callPublicFn(
     POOL,
     "initialize",
-    [Cl.principal(managerPrincipal()), Cl.principal(deployer)],
+    [Cl.principal(managerPrincipal(manager)), Cl.principal(deployer)],
     sender,
   ).result;
 
@@ -164,9 +167,9 @@ export const bindBond = (
     sender,
   ).result;
 
-export function bootstrap(maxSats = MAX_SATS) {
-  expectOk(registerSignerManager(), "register signer");
-  expectOk(initializePool(), "initialize");
+export function bootstrap(maxSats = MAX_SATS, manager = MANAGER) {
+  expectOk(registerSignerManager(manager), "register signer");
+  expectOk(initializePool(deployer, manager), "initialize");
   setupBond();
   expectOk(bindBond(BOND_INDEX, maxSats), "bind first bond");
   return {
@@ -198,21 +201,45 @@ export const requestExit = (who: string) =>
 export const cancelExit = (who: string) =>
   simnet.callPublicFn(POOL, "cancel-exit", [], who).result;
 
-export const stake = (who = deployer) =>
+export const stake = (who = deployer, manager = MANAGER) =>
   simnet.callPublicFn(
     POOL,
     "stake",
-    [Cl.principal(managerPrincipal())],
+    [Cl.principal(managerPrincipal(manager))],
     who,
   ).result;
 
-export const unstakeSbtc = (who = deployer) =>
+export const unstakeSbtc = (who = deployer, manager = MANAGER) =>
   simnet.callPublicFn(
     POOL,
     "unstake-sbtc",
-    [Cl.principal(managerPrincipal())],
+    [Cl.principal(managerPrincipal(manager))],
     who,
   ).result;
+
+export const setValidationMode = (mode: number, manager = CALLBACK_MANAGER) =>
+  simnet.callPublicFn(
+    manager,
+    "set-validation-mode",
+    [Cl.uint(mode)],
+    deployer,
+  ).result;
+
+export const setCallbackTarget = (
+  target: string,
+  manager = CALLBACK_MANAGER,
+) =>
+  simnet.callPublicFn(
+    manager,
+    "set-callback-target",
+    [Cl.principal(target)],
+    deployer,
+  ).result;
+
+export const validationState = (manager = CALLBACK_MANAGER) =>
+  plain(
+    simnet.callReadOnlyFn(manager, "get-validation-state", [], deployer).result,
+  ) as any;
 
 export const updateOperator = (
   who: string,
@@ -235,6 +262,21 @@ export const updateBondRegistration = (
     POOL,
     "update-bond-registration",
     [Cl.principal(managerPrincipal(next)), Cl.principal(managerPrincipal(previous))],
+    sender,
+  ).result;
+
+export const signerHash = (manager: string) =>
+  plain(
+    readPool("get-signer-manager-hash", [
+      Cl.principal(managerPrincipal(manager)),
+    ]),
+  ) as string;
+
+export const trustSignerManager = (manager: string, sender = deployer) =>
+  simnet.callPublicFn(
+    POOL,
+    "trust-signer-manager",
+    [Cl.bufferFromHex(signerHash(manager).replace(/^0x/, ""))],
     sender,
   ).result;
 
@@ -286,11 +328,12 @@ export const treasuryBalance = () => sbtcBalance(treasuryPrincipal());
 
 export function stakeFirstBond(
   deposits: ReadonlyArray<readonly [string, number]>,
+  manager = MANAGER,
 ) {
-  const { bondStart, unlockHeight } = bootstrap();
+  const { bondStart, unlockHeight } = bootstrap(MAX_SATS, manager);
   for (const [who, sats] of deposits) expectOk(deposit(who, sats), "deposit");
   advanceToBurnHeight(bondStart - 288);
-  expectOk(stake(), "stake first bond");
+  expectOk(stake(deployer, manager), "stake first bond");
   return { bondStart, unlockHeight };
 }
 
