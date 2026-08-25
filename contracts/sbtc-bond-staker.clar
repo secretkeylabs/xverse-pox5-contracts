@@ -185,6 +185,8 @@
 (define-data-var pending-stx-value-ratio uint u0)
 (define-data-var pending-min-ustx-ratio uint u0)
 (define-data-var pending-start-height uint u0)
+;; Exclusive deadline before PoX-5's prepare phase freezes the target cycle.
+(define-data-var pending-stake-deadline uint u0)
 (define-data-var pending-unlock-height uint u0)
 
 ;; Each binding gets a fresh generation. Commitments are keyed by generation,
@@ -231,7 +233,8 @@
 
 ;;; Pooled principal
 ;;
-;;   queued    deposited, not yet committed. In the treasury; withdrawable.
+;;   queued    supplied for a pending bond, not yet bonded. In the treasury;
+;;             recovered through its deposit or commitment lifecycle.
 ;;   bonded    committed to the live bond. In pox-5's custody.
 ;;   exiting   the part of `bonded` that the next roll will release.
 ;;   released  no longer committed, waiting to be claimed. In the treasury.
@@ -304,7 +307,8 @@
     ;; Committed principal.
     bonded-sats: uint,
     bonded-ustx: uint,
-    ;; Deposited, not yet committed. Withdrawable until `queued-epoch` opens.
+    ;; Supplied for a pending bond. Initial queues use `withdraw`; rollover
+    ;; queues use commitment cancellation, `request-exit`, or stale recovery.
     queued-sats: uint,
     queued-ustx: uint,
     queued-epoch: uint,
@@ -389,6 +393,7 @@
     start-height: (var-get pending-start-height),
     unlock-burn-height: (var-get pending-unlock-height),
     stake-opens-at: (stake-window-start),
+    stake-closes-at: (var-get pending-stake-deadline),
     rollover-cutoff: (rollover-cutoff),
     stakeable: (can-still-stake),
     bound-at-height: (var-get bound-at-height),
@@ -476,6 +481,7 @@
       can-commit: (and
         (var-get bond-bound)
         (> (var-get epoch-count) u0)
+        (< burn-block-height (var-get pending-start-height))
         (< burn-block-height (rollover-cutoff))
         (> target u0)
         (<= target remaining)
@@ -611,7 +617,10 @@
 )
 
 (define-read-only (can-still-stake)
-  (and (var-get bond-bound) (< burn-block-height (var-get pending-start-height)))
+  (and
+    (var-get bond-bound)
+    (< burn-block-height (var-get pending-stake-deadline))
+  )
 )
 
 (define-read-only (is-epoch-ended (epoch uint))
@@ -687,8 +696,10 @@
   )
 )
 
-;; Principal the member can take right now: whatever has been released, plus
-;; their queued deposit, which `withdraw` returns at any time.
+;; Principal status for client recovery flows. `claim-principal` pays only the
+;; released fields. Initial queues use `withdraw`; live rollover queues use
+;; direct commitment cancellation before cutoff, `request-exit` before stake,
+;; or stale recovery after a missed bond.
 (define-read-only (get-claimable-principal (member principal))
   (match (map-get? members member)
     stored (let ((record (settle stored member)))
@@ -791,6 +802,24 @@
         (unlock-height (contract-call? 'ST000000000000000000002AMW42H.pox-5
           reward-cycle-to-burn-height (+ start-cycle BOND_LENGTH_CYCLES)
         ))
+        (pox-info (unwrap!
+          (contract-call? 'ST000000000000000000002AMW42H.pox-5 get-pox-info)
+          ERR_TOO_LATE
+        ))
+        (prepare-length (get prepare-cycle-length pox-info))
+        (stake-deadline (if (> start-height prepare-length)
+          (- start-height prepare-length)
+          u0
+        ))
+        (window-start (if (> start-height STAKE_WINDOW)
+          (- start-height STAKE_WINDOW)
+          u0
+        ))
+        (notice-ends (+ burn-block-height BIND_NOTICE))
+        (cutoff (if (> window-start notice-ends)
+          window-start
+          notice-ends
+        ))
       )
       (asserts! (var-get initialized) ERR_NOT_INITIALIZED)
       (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
@@ -806,8 +835,11 @@
       (asserts! (or (is-eq index GENESIS_BOND_INDEX) (is-eq min-sats u0))
         ERR_INVALID_AMOUNT
       )
-      ;; Deposits would be pointless: the bond can no longer be joined.
+      ;; Deposits would be pointless once the bond starts. The calculated
+      ;; cutoff must also leave at least one block before PoX-5's prepare phase
+      ;; freezes the target cycle, or no accepted commitment could execute.
       (asserts! (< burn-block-height start-height) ERR_TOO_LATE)
+      (asserts! (< cutoff stake-deadline) ERR_TOO_LATE)
       (asserts!
         (match (get-live-epoch)
           live (>= index (+ (get bond-index live) NEXT_BOND_OFFSET))
@@ -833,6 +865,7 @@
       (var-set pending-stx-value-ratio (get stx-value-ratio bond))
       (var-set pending-min-ustx-ratio (get min-ustx-ratio bond))
       (var-set pending-start-height start-height)
+      (var-set pending-stake-deadline stake-deadline)
       (var-set pending-unlock-height unlock-height)
       (var-set bound-at-height burn-block-height)
       (var-set bond-bound true)
@@ -932,6 +965,7 @@
     (try! (assert-no-protocol-transition))
     (asserts! (> (var-get epoch-count) u0) ERR_NOT_STAKED)
     (asserts! (var-get bond-bound) ERR_NO_BOND_BOUND)
+    (asserts! (< burn-block-height (var-get pending-start-height)) ERR_TOO_LATE)
     (asserts! (< burn-block-height (rollover-cutoff)) ERR_COMMITMENT_CLOSED)
     (asserts! (> target-sats u0) ERR_INVALID_AMOUNT)
     (asserts! (is-none (get exit-epoch record)) ERR_ALREADY_EXITING)
@@ -1047,7 +1081,7 @@
     (asserts! (get meets-ratio preview) ERR_INSUFFICIENT_STX)
     (asserts! (get meets-floor preview) ERR_BELOW_LAUNCH_FLOOR)
     (asserts! (>= burn-block-height (rollover-cutoff)) ERR_TOO_EARLY)
-    (asserts! (< burn-block-height (var-get pending-start-height)) ERR_TOO_LATE)
+    (asserts! (< burn-block-height (var-get pending-stake-deadline)) ERR_TOO_LATE)
 
     ;; The treasury payout below temporarily places member principal in this
     ;; contract before PoX-5 calls the signer manager and takes custody. Keep
@@ -1320,27 +1354,34 @@
 ;; out of the live epoch, and its shares keep earning that bond's rewards
 ;; until the epoch's book closes.
 ;;
-;; If the pool never rolls again, `unstake-sbtc` releases it instead.
+;; If the pool never rolls again, `unstake-sbtc` releases it instead. A
+;; newcomer with only a pending commitment is refunded immediately and returns
+;; `exit-epoch: none` because there is no old bonded position to release.
 (define-public (request-exit)
   (let (
       (member tx-sender)
       (before (settle (unwrap! (map-get? members member) ERR_NOTHING_DEPOSITED) member))
       (live-generation (map-get? member-live-commitment member))
+      (unconsumed-generation (match live-generation
+        generation (if (default-to false (map-get? consumed-generations generation))
+          none
+          (some generation)
+        )
+        none
+      ))
       (epoch (var-get epoch-count))
     )
     (try! (assert-no-protocol-transition))
     (asserts! (> epoch u0) ERR_NOT_STAKED)
     (asserts! (not (var-get finished)) ERR_ALREADY_UNSTAKED)
     (asserts! (is-none (get exit-epoch before)) ERR_ALREADY_EXITING)
-    (asserts! (> (get bonded-sats before) u0) ERR_NOTHING_DEPOSITED)
 
-    ;; A request to leave always cancels an unconsumed rollover commitment,
-    ;; including after the normal direct-cancellation cutoff but before stake.
-    (match live-generation
-      generation (if (default-to false (map-get? consumed-generations generation))
-        true
-        (try! (cancel-member-commitment member generation))
-      )
+    ;; Always unwind an unconsumed commitment before deciding whether an old
+    ;; bonded position needs an exit record. This keeps request-exit available
+    ;; to newcomers after direct cancellation closes without creating a zero
+    ;; principal exit liability.
+    (match unconsumed-generation
+      generation (try! (cancel-member-commitment member generation))
       true
     )
 
@@ -1348,10 +1389,22 @@
         (record (settle (unwrap! (map-get? members member) ERR_NOTHING_DEPOSITED) member))
         (sats (get bonded-sats record))
         (ustx (get bonded-ustx record))
+        (exit-epoch (if (> sats u0)
+          (some (- epoch u1))
+          none
+        ))
       )
-      (map-set members member (merge record { exit-epoch: (some (- epoch u1)) }))
-      (var-set exiting-sats (+ (var-get exiting-sats) sats))
-      (var-set exiting-ustx (+ (var-get exiting-ustx) ustx))
+      (asserts! (or (> sats u0) (is-some unconsumed-generation))
+        ERR_NOTHING_DEPOSITED
+      )
+      (if (> sats u0)
+        (begin
+          (map-set members member (merge record { exit-epoch: exit-epoch }))
+          (var-set exiting-sats (+ (var-get exiting-sats) sats))
+          (var-set exiting-ustx (+ (var-get exiting-ustx) ustx))
+        )
+        true
+      )
 
       (let ((result {
           member: member,
@@ -1359,7 +1412,7 @@
           ustx: ustx,
           refunded-sats: (- (get queued-sats before) (get queued-sats record)),
           refunded-ustx: (- (get queued-ustx before) (get queued-ustx record)),
-          exit-epoch: (- epoch u1),
+          exit-epoch: exit-epoch,
         }))
         (print (merge { topic: "request-exit" } result))
         (ok result)

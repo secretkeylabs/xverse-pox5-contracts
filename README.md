@@ -54,6 +54,35 @@ At rollover:
 
 There is no proportional best-effort rollover or partial commitment.
 
+## Commitment timing and principal recovery
+
+The commitment cutoff is the later of the configured stake-window opening and
+the end of the binding notice period. Commitments and direct commitment
+cancellations require a burn height strictly below that cutoff. A bond binding
+is rejected unless its cutoff leaves at least one executable block before
+PoX-5's prepare phase freezes the target cycle. `get-bound-bond` exposes that
+exclusive limit as `stake-closes-at`, and `stakeable` becomes false when it is
+reached.
+
+Before the cutoff, `cancel-rollover-commitment` refunds the sBTC and STX added
+by a commitment and releases its complete allowance reservation. After direct
+cancellation closes, `request-exit` remains the full opt-out path until a
+successful stake consumes the commitment:
+
+- for an incumbent, it refunds additions, cancels the reservation, and marks
+  the old bonded position for release;
+- for a newcomer with no old bonded position, it refunds the complete queued
+  contribution and returns `exit-epoch: none` without creating an exit
+  liability.
+
+The `queued-sats` and `queued-ustx` fields returned by
+`get-claimable-principal` describe assets supplied for a pending bond; they are
+not paid by `claim-principal`. Initial queues use `withdraw`. Live rollover
+queues use direct commitment cancellation before the cutoff, `request-exit`
+before successful stake, or cancellation after the bond becomes unstakeable.
+Only `released-sats` and `released-ustx` are immediately payable through
+`claim-principal`.
+
 ## Signer callback safety
 
 PoX-5 invokes the configured signer manager while a stake or rollover is still

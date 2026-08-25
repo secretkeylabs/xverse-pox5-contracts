@@ -325,8 +325,16 @@ export const payRewards = (from: string, amount: number) =>
 export const requiredUstx = (sats: number) =>
   num(readPool("get-required-ustx", [Cl.uint(sats)]));
 
+export const poxInfo = () => plain(readPox("get-pox-info")) as any;
 export const poolConfig = () => plain(readPool("get-config")) as any;
 export const boundBond = () => plain(readPool("get-bound-bond")) as any;
+export const rolloverPreview = (who: string, additionalSats = 0) =>
+  plain(
+    readPool("get-member-rollover-preview", [
+      Cl.principal(who),
+      Cl.uint(additionalSats),
+    ]),
+  ) as any;
 export const stakePreview = () => plain(readPool("get-stake-preview")) as any;
 export const poolTotals = () => plain(readPool("get-pool")) as any;
 export const epoch = (index: number) =>

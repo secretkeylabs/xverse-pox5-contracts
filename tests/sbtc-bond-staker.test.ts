@@ -9,11 +9,13 @@ import {
   advanceToBurnHeight,
   bindBond,
   bindNextBond,
+  bondStartHeight,
   bootstrap,
   boundBond,
   cancelRollover,
   claimPrincipal,
   claimRewards,
+  claimablePrincipal,
   claimableRewards,
   commitRollover,
   deployer,
@@ -26,10 +28,12 @@ import {
   plain,
   poolConfig,
   poolPrincipal,
+  poxInfo,
   poolTotals,
   registerSignerManager,
   requestExit,
   requiredUstx,
+  rolloverPreview,
   sbtcBalance,
   setupBond,
   settledMember,
@@ -55,6 +59,7 @@ const dave = accounts.get("wallet_4")!;
 const ALICE_SATS = 10_000_000;
 const BOB_SATS = 30_000_000;
 const POOL_SATS = ALICE_SATS + BOB_SATS;
+const BIND_NOTICE = 576;
 
 const stakeInitialPool = () =>
   stakeFirstBond([
@@ -276,12 +281,149 @@ describe("commitment cancellation and exits", () => {
     expect(Number(settledMember(bob).shares)).toBe(BOB_SATS);
   });
 
-  it("closes direct cancellation at the deterministic cutoff", () => {
+  it("lets an incumbent request-exit after direct cancellation closes", () => {
     stakeInitialPool();
-    const { cutoff } = bindNextBond();
-    commitRollover(alice);
+    const { cutoff } = bindNextBond(200_000);
+    const additional = 2_000_000;
+    const sbtcBefore = sbtcBalance(alice);
+    const stxBefore = stxBalance(alice);
+    expect(commitRollover(alice, additional).type).toBe("ok");
+
     advanceToBurnHeight(cutoff);
+    expect(boundBond().stakeable).toBe(true);
+    const committedBefore = Number(poolTotals()["committed-sats"]);
+    const queuedBefore = Number(poolTotals()["queued-sats"]);
+    const treasuryBefore = treasuryBalance();
     expect(cancelRollover(alice)).toBeErr(Cl.uint(133));
+    expect(Number(poolTotals()["committed-sats"])).toBe(committedBefore);
+    expect(Number(poolTotals()["queued-sats"])).toBe(queuedBefore);
+    expect(treasuryBalance()).toBe(treasuryBefore);
+
+    const result = requestExit(alice);
+    expect(result.type).toBe("ok");
+    expect(Number(plain(result)["exit-epoch"])).toBe(0);
+    expect(sbtcBalance(alice)).toBe(sbtcBefore);
+    expect(stxBalance(alice)).toBe(stxBefore);
+    expect(Number(poolTotals()["committed-sats"])).toBe(0);
+    expect(Number(poolTotals()["queued-sats"])).toBe(0);
+    expect(Number(poolTotals()["exiting-sats"])).toBe(ALICE_SATS);
+    expect(Number(member(alice)["exit-epoch"])).toBe(0);
+
+    const failedState = poolTotals();
+    const failedMember = member(alice);
+    const failedSbtc = sbtcBalance(alice);
+    const failedStx = stxBalance(alice);
+    expect(requestExit(alice)).toBeErr(Cl.uint(123));
+    expect(poolTotals()).toEqual(failedState);
+    expect(member(alice)).toEqual(failedMember);
+    expect(sbtcBalance(alice)).toBe(failedSbtc);
+    expect(stxBalance(alice)).toBe(failedStx);
+  });
+
+  it("refunds a new member through request-exit at the cutoff without an exit liability", () => {
+    stakeInitialPool();
+    const { cutoff } = bindNextBond(200_000);
+    const additional = 2_000_000;
+    const sbtcBefore = sbtcBalance(carol);
+    const stxBefore = stxBalance(carol);
+    expect(commitRollover(carol, additional).type).toBe("ok");
+    expect(claimablePrincipal(carol)).toMatchObject({
+      "released-sats": "0",
+      "released-ustx": "0",
+      "queued-sats": String(additional),
+    });
+    expect(claimPrincipal(carol)).toBeErr(Cl.uint(114));
+
+    advanceToBurnHeight(cutoff);
+    const committedBefore = poolTotals();
+    expect(cancelRollover(carol)).toBeErr(Cl.uint(133));
+    expect(poolTotals()).toEqual(committedBefore);
+
+    const result = requestExit(carol);
+    expect(result.type).toBe("ok");
+    expect(plain(result)["exit-epoch"]).toBeNull();
+    expect(sbtcBalance(carol)).toBe(sbtcBefore);
+    expect(stxBalance(carol)).toBe(stxBefore);
+    expect(treasuryBalance()).toBe(0);
+    expect(Number(poolTotals()["committed-sats"])).toBe(0);
+    expect(Number(poolTotals()["queued-sats"])).toBe(0);
+    expect(Number(poolTotals()["exiting-sats"])).toBe(0);
+    expect(member(carol)["exit-epoch"]).toBeNull();
+    expect(claimablePrincipal(carol)).toMatchObject({
+      "released-sats": "0",
+      "released-ustx": "0",
+      "queued-sats": "0",
+      "queued-ustx": "0",
+    });
+  });
+
+  it("reopens direct cancellation when PoX prepare makes the bond unstakeable", () => {
+    stakeInitialPool();
+    bindNextBond(200_000);
+    const additional = 2_000_000;
+    const sbtcBefore = sbtcBalance(carol);
+    const stxBefore = stxBalance(carol);
+    expect(commitRollover(carol, additional).type).toBe("ok");
+
+    advanceToBurnHeight(Number(boundBond()["stake-closes-at"]));
+    expect(boundBond().stakeable).toBe(false);
+    expect(cancelRollover(carol).type).toBe("ok");
+    expect(sbtcBalance(carol)).toBe(sbtcBefore);
+    expect(stxBalance(carol)).toBe(stxBefore);
+    expect(Number(poolTotals()["committed-sats"])).toBe(0);
+    expect(Number(poolTotals()["queued-sats"])).toBe(0);
+  });
+
+  it("keeps commitment and preview boundaries strictly before bond start", () => {
+    stakeInitialPool();
+    const { cutoff, start } = bindNextBond();
+
+    expect(commitRollover(carol, ALICE_SATS).type).toBe("ok");
+    advanceToBurnHeight(cutoff - 1);
+    expect(cancelRollover(carol).type).toBe("ok");
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(true);
+
+    advanceToBurnHeight(cutoff);
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
+    expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(133));
+
+    advanceToBurnHeight(start);
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
+    expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(109));
+
+    advanceToBurnHeight(start + 1);
+    expect(rolloverPreview(carol, ALICE_SATS)["can-commit"]).toBe(false);
+    expect(commitRollover(carol, ALICE_SATS)).toBeErr(Cl.uint(109));
+  });
+
+  it("rejects a late bind with no executable stake block", () => {
+    stakeInitialPool();
+    setupBond(12);
+    const start = bondStartHeight(12);
+    const prepareLength = Number(poxInfo()["prepare-cycle-length"]);
+    advanceToBurnHeight(start - prepareLength - BIND_NOTICE);
+
+    expect(bindBond(12)).toBeErr(Cl.uint(109));
+    expect(boundBond().bound).toBe(false);
+    expect(Number(poolTotals()["committed-sats"])).toBe(0);
+    expect(Number(poolTotals()["queued-sats"])).toBe(0);
+    expect(treasuryBalance()).toBe(0);
+  });
+
+  it("accepts the latest bind that leaves one executable stake block", () => {
+    stakeInitialPool();
+    setupBond(12);
+    const start = bondStartHeight(12);
+    const stakeDeadline = start - Number(poxInfo()["prepare-cycle-length"]);
+    advanceToBurnHeight(stakeDeadline - BIND_NOTICE - 1);
+
+    expect(bindBond(12).type).toBe("ok");
+    expect(Number(boundBond()["notice-ends-at"])).toBe(stakeDeadline - 1);
+    expect(Number(boundBond()["rollover-cutoff"])).toBe(stakeDeadline - 1);
+    expect(Number(boundBond()["stake-closes-at"])).toBe(stakeDeadline);
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(stakeDeadline - 1);
+    expect(stake().type).toBe("ok");
   });
 
   it("replaces a missed bond without carrying stale reservations", () => {
@@ -293,8 +435,10 @@ describe("commitment cancellation and exits", () => {
     const replacement = bindNextBond(100_000, MAX_SATS, 18);
     expect(Number(poolTotals()["committed-sats"])).toBe(0);
     expect(commitRollover(bob).type).toBe("ok");
+    expect(Number(poolTotals()["committed-sats"])).toBe(BOB_SATS);
     expect(commitRollover(alice)).toBeErr(Cl.uint(130));
     expect(cancelRollover(alice).type).toBe("ok");
+    expect(Number(poolTotals()["committed-sats"])).toBe(BOB_SATS);
     expect(commitRollover(alice).type).toBe("ok");
     expect(replacement.index).toBe(18);
   });
@@ -312,6 +456,9 @@ describe("commitment cancellation and exits", () => {
     expect(sbtcBalance(alice)).toBe(sbtcBefore);
     expect(stxBalance(alice)).toBe(stxBefore);
     expect(Number(poolTotals()["bonded-sats"])).toBe(POOL_SATS);
+    expect(Number(poolTotals()["committed-sats"])).toBe(0);
+    expect(Number(poolTotals()["queued-sats"])).toBe(0);
+    expect(treasuryBalance()).toBe(0);
   });
 });
 
