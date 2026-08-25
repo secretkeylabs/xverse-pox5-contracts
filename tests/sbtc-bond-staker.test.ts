@@ -513,11 +513,11 @@ describe("commitment cancellation and exits", () => {
 });
 
 describe("rewards, wind-down, authority, and treasury isolation", () => {
-  it("preserves prior-epoch delayed rewards for a member not rolled", () => {
+  it("permissionlessly preserves timely prior-bond rewards for a member not rolled", () => {
     stakeInitialPool();
     const firstReward = 4_000_000;
     payRewards(carol, firstReward);
-    syncRewards();
+    expect(syncRewards(dave).type).toBe("ok");
     expect(claimRewards(bob).type).toBe("ok");
 
     const { cutoff } = bindNextBond();
@@ -527,7 +527,7 @@ describe("rewards, wind-down, authority, and treasury isolation", () => {
 
     const tail = 1_200_000;
     payRewards(dave, tail);
-    syncRewards();
+    expect(syncRewards(carol).type).toBe("ok");
     expect(claimableRewards(bob)).toBe((tail * BOB_SATS) / POOL_SATS);
     expect(Number(settledMember(bob).shares)).toBe(0);
     expect(claimRewards(bob).type).toBe("ok");

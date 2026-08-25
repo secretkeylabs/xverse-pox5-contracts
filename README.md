@@ -90,6 +90,28 @@ before successful stake, or cancellation after the bond becomes unstakeable.
 Only `released-sats` and `released-ustx` are immediately payable through
 `claim-principal`.
 
+## Reward synchronization
+
+The intended signer manager exposes permissionless aggregate and per-staker
+reward claims. Because this pool registers without a Bitcoin reward address,
+its per-staker payout arrives as sBTC at the staker contract. `sync-rewards` is
+also permissionless and credits every sBTC sat above existing reward liabilities
+to the oldest bond accounting period still accepting rewards.
+
+A prior bond remains the reward target for one complete reward cycle after its
+successor starts, covering PoX-5's delayed final-cycle payout. Xverse should run
+a keeper that claims the signer-manager payout and calls `sync-rewards`
+promptly; members and other callers remain permissionless fallbacks. If no one
+completes those calls before the prior period's tail closes, its payout can be
+credited to the current bond's shares. That extended keeper failure is an
+accepted operational risk, not an individual member claim deadline. Once a
+payout is synchronized, members may claim their credited rewards later.
+
+The pool intentionally does not distinguish unsolicited sBTC from signer
+rewards. Any bare sBTC transferred to the staker is a donation and is allocated
+on the next successful `sync-rewards`. No separate donation ledger, attribution
+proof, monitoring requirement, or sweep path is provided.
+
 ## Signer callback safety
 
 PoX-5 invokes the configured signer manager while a stake or rollover is still
