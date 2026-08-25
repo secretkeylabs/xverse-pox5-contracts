@@ -27,6 +27,11 @@ path = "contracts/test-signer-manager-callback.clar"
 clarity_version = 6
 epoch = "4.0"
 
+[contracts.test-caller]
+path = "contracts/test-caller.clar"
+clarity_version = 6
+epoch = "4.0"
+
 # Canonical lane-0 development pair. TASK-002 generates lanes 0-5 from the
 # same reviewed sources and adds all 12 generated contracts to the manifest.
 [contracts.sbtc-bond-treasury-0]

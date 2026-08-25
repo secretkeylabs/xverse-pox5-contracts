@@ -506,11 +506,21 @@
         (var-get committed-ustx)
       ))
       (required (get-required-ustx sats))
-      (uncommitted-sats (if initial
+      ;; A pending commitment remains cancellable after permissionless
+      ;; wind-down. `unstake-sbtc` has already zeroed bonded principal then, so
+      ;; keep this preview total and let `stake` return its normal closed-state
+      ;; error instead of evaluating an unsigned subtraction below zero.
+      (uncommitted-sats (if (or
+          initial
+          (> (var-get committed-old-sats) (var-get bonded-sats))
+        )
         u0
         (- (var-get bonded-sats) (var-get committed-old-sats))
       ))
-      (uncommitted-ustx (if initial
+      (uncommitted-ustx (if (or
+          initial
+          (> (var-get committed-old-ustx) (var-get bonded-ustx))
+        )
         u0
         (- (var-get bonded-ustx) (var-get committed-old-ustx))
       ))
@@ -1457,8 +1467,11 @@
 
 ;; Recognise sBTC that has arrived for the pool and split it across the shares
 ;; of the oldest epoch still open. Permissionless, and safe to call as often
-;; as anyone likes: it only ever moves the surplus, and the sub-share
-;; remainder is left behind for the next call rather than being lost.
+;; as anyone likes: it only ever moves the surplus. Aggregate index remainder
+;; stays unrecognized for a later call. Separately, each member floors accrued
+;; rewards to whole sats when settled and advances their checkpoint; those
+;; recognized fractional entitlements are permanently inaccessible and cannot
+;; be redistributed or swept.
 (define-public (sync-rewards)
   (let (
       (epoch (unwrap! (get-reward-epoch) ERR_NOT_STAKED))

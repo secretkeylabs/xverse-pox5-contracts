@@ -5,6 +5,9 @@
 (impl-trait 'ST000000000000000000002AMW42H.pox-5.signer-manager-trait)
 (use-trait signer-manager-trait 'ST000000000000000000002AMW42H.pox-5.signer-manager-trait)
 
+;; Required by PoX-5's state-changing signer-manager trait even though this
+;; accepting test implementation does not write its own state.
+;; #[allow(unnecessary_public)]
 (define-public (validate-stake!
     ;; #[allow(unused_binding)]
     (staker principal)

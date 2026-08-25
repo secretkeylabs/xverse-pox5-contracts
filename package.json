@@ -8,8 +8,10 @@
   "scripts": {
     "check": "clarinet check && bun run check:types",
     "check:types": "tsc --noEmit",
+    "check:format": "clarinet format --check",
     "test": "vitest run",
     "test:report": "vitest run -- --coverage --costs",
+    "validate": "bun run check && bun run test && bun run test:report && bun run check:format",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"bun run test:report\""
   },
   "author": "",

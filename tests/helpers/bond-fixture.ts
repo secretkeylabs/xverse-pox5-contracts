@@ -15,6 +15,7 @@ export const TREASURY = "sbtc-bond-treasury-0";
 export const MANAGER = "test-signer-manager";
 export const ALT_MANAGER = "test-signer-manager-alt";
 export const CALLBACK_MANAGER = "test-signer-manager-callback";
+export const TEST_CALLER = "test-caller";
 export const BOND_ADMIN = "ST000000000000000000002AMW42H";
 
 export const CYCLE_LENGTH = 1050;
@@ -39,6 +40,7 @@ export const deployer = accounts.get("deployer")!;
 export const poolPrincipal = () => `${deployer}.${POOL}`;
 export const treasuryPrincipal = () => `${deployer}.${TREASURY}`;
 export const managerPrincipal = (name = MANAGER) => `${deployer}.${name}`;
+export const testCallerPrincipal = () => `${deployer}.${TEST_CALLER}`;
 
 export const num = (cv: ClarityValue) => Number(cvToValue(cv, true));
 
@@ -174,11 +176,12 @@ export const bindBond = (
   index = BOND_INDEX,
   maxSats = MAX_SATS,
   sender = deployer,
+  minSats = 0,
 ) =>
   simnet.callPublicFn(
     POOL,
     "bind-bond",
-    [Cl.uint(index), Cl.uint(maxSats), Cl.uint(0)],
+    [Cl.uint(index), Cl.uint(maxSats), Cl.uint(minSats)],
     sender,
   ).result;
 
@@ -295,6 +298,25 @@ export const trustSignerManager = (manager: string, sender = deployer) =>
     sender,
   ).result;
 
+export const distrustSignerManager = (manager: string, sender = deployer) =>
+  simnet.callPublicFn(
+    POOL,
+    "distrust-signer-manager",
+    [Cl.bufferFromHex(signerHash(manager).replace(/^0x/, ""))],
+    sender,
+  ).result;
+
+export const sweepUnattributedPrincipal = (
+  recipient: string,
+  sender = deployer,
+) =>
+  simnet.callPublicFn(
+    POOL,
+    "sweep-unattributed-principal",
+    [Cl.principal(recipient)],
+    sender,
+  ).result;
+
 export const settleMember = (who: string, sender = deployer) =>
   simnet.callPublicFn(POOL, "settle-member", [Cl.principal(who)], sender).result;
 
@@ -309,18 +331,21 @@ export const claimRewards = (member: string, sender = deployer) =>
   simnet.callPublicFn(POOL, "claim-rewards", [Cl.principal(member)], sender)
     .result;
 
-export const payRewards = (from: string, amount: number) =>
+export const transferSbtc = (from: string, to: string, amount: number) =>
   simnet.callPublicFn(
     SBTC,
     "transfer",
     [
       Cl.uint(amount),
       Cl.principal(from),
-      Cl.principal(poolPrincipal()),
+      Cl.principal(to),
       Cl.none(),
     ],
     from,
   ).result;
+
+export const payRewards = (from: string, amount: number) =>
+  transferSbtc(from, poolPrincipal(), amount);
 
 export const requiredUstx = (sats: number) =>
   num(readPool("get-required-ustx", [Cl.uint(sats)]));
@@ -347,6 +372,11 @@ export const claimableRewards = (who: string) =>
   num(readPool("get-claimable-rewards", [Cl.principal(who)]));
 export const claimablePrincipal = (who: string) =>
   plain(readPool("get-claimable-principal", [Cl.principal(who)])) as any;
+export const rewardEpoch = () => plain(readPool("get-reward-epoch"));
+export const unattributedPrincipal = () =>
+  num(readPool("get-unattributed-principal"));
+export const unrecognizedRewards = () =>
+  num(readPool("get-unrecognized-rewards"));
 export const treasuryBalance = () => sbtcBalance(treasuryPrincipal());
 
 export function stakeFirstBond(

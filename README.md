@@ -3,9 +3,9 @@
 Clarity contracts for Xverse pooled sBTC participation in PoX-5 protocol
 bonds.
 
-## TASK-001 scope
+## Canonical scope
 
-The current canonical implementation is the lane-0 development pair:
+The reviewed canonical implementation is the lane-0 development pair:
 
 - `sbtc-bond-treasury-0` — holds queued and released member sBTC principal;
 - `sbtc-bond-staker-0` — deposits, full-position rollover commitments, epochs,
@@ -90,6 +90,22 @@ before successful stake, or cancellation after the bond becomes unstakeable.
 Only `released-sats` and `released-ustx` are immediately payable through
 `claim-principal`.
 
+### Missed bonds and delayed replacement
+
+A replacement after a missed seamless bond is best-effort. Once the old live
+bond unlocks, permissionless `unstake-sbtc` remains available even if a delayed
+bond has been bound and members have committed to it. Transaction ordering is
+decisive:
+
+- if delayed `stake` succeeds first, the pool continues in that bond;
+- if `unstake-sbtc` succeeds first, the pool finishes permanently, old
+  principal is released, and commitment additions remain cancellable.
+
+There is deliberately no replacement grace period, operator veto, commitment
+threshold, or pending-binding priority. Repeated late bindings cannot postpone
+the old position's permissionless release. This prioritizes bounded principal
+recovery over delayed continuity.
+
 ## Reward synchronization
 
 The intended signer manager exposes permissionless aggregate and per-staker
@@ -111,6 +127,22 @@ The pool intentionally does not distinguish unsolicited sBTC from signer
 rewards. Any bare sBTC transferred to the staker is a donation and is allocated
 on the next successful `sync-rewards`. No separate donation ledger, attribution
 proof, monitoring requirement, or sweep path is provided.
+
+### Whole-satoshi flooring and locked dust
+
+Reward indices use `PRECISION = 1e12`. Aggregate synchronization and every
+member settlement floor independently to whole sats. Settlement persists the
+new checkpoint even when a fractional entitlement floors to zero. Consequently,
+repeated settlements and many members can permanently lock multiple recognized
+sats; there is no lifetime or pool-wide one-sat bound.
+
+Locked dust remains funded at the staker and is included in
+`total-credited - total-paid`, but it is not a realizable member claim,
+unrecognized reward, future-bond reward, or sweepable balance. The resulting
+reward reserve is conservative: it can exceed the sum of realizable member
+claims without affecting principal solvency. This inherited behavior is
+intentional; the pool has no fractional carry, redistribution, claim expiry,
+finalization, or reward sweep.
 
 ## Signer callback safety
 
@@ -134,6 +166,42 @@ settlement, and protocol entry points during validation, including the exact
 growing-rollover sequence that would otherwise recognize temporary principal
 as rewards.
 
+The production compatibility pin is `secretkeylabs/pool-contracts` revision
+`2e6e418c9918af0366cc5640fb281c1419c20e04`. Its three generated mainnet signer
+manager artifacts are byte-identical with SHA-256
+`c0a2cc8e83de2b1bc60e07c5e0f5da8991c6f79eb05d077bba8cb984eee226b3`.
+The canonical pre-generation source hash is
+`f86819132e5c4e6f00d491b27f32ded4c3342c2be875ff90d1eba70fd5f0a5cf`.
+Deployment review must select a principal whose code matches that artifact.
+
+## Caller and authority semantics
+
+Member, deployer, and operator checks intentionally use `tx-sender`:
+
+- direct standard origins act as themselves;
+- consensus-valid sequential or order-independent P2SH/P2WSH multisig origins,
+  including MPC/TSS-controlled accounts, act as their resulting standard
+  principal;
+- in sponsored transactions, the origin has authority and the sponsor only
+  pays fees;
+- an ordinary forwarding contract preserves the origin as `tx-sender` and can
+  exercise any pool operation currently available to that origin during the
+  transaction; no persistent delegate is created;
+- a contract wallet owns a position or operator seat only when it calls under
+  `as-contract?`, which makes the contract principal the effective sender;
+- a direct relayer has no authority from an off-chain signature the pool does
+  not verify. Permissionless pay-to-member claims remain relayable because
+  assets always go to the recorded member.
+
+Bitcoin multisig and the sBTC signer threshold are separate systems and do not
+create a Stacks member or operator identity. Contract-level support does not
+guarantee every wallet frontend can construct each transaction form. Users
+must treat an ordinary forwarding contract as transaction-scoped authority to
+use their currently available pool operations.
+
+See [SECURITY.md](SECURITY.md) for the complete trust boundary and
+[REVIEW-DISPOSITION.md](REVIEW-DISPOSITION.md) for the canonical review matrix.
+
 ## Deliberate exclusions
 
 The suite has no:
@@ -142,7 +210,7 @@ The suite has no:
 - Esbee DAO contract;
 - generic STX-only top-up;
 - passive or partial rollover;
-- sponsorship;
+- contract-specific sponsorship or delegated-caller state;
 - cross-lane balance or aggregate receipt.
 
 Users enter and leave using sBTC and STX on Stacks. Operator and signer-manager
@@ -160,10 +228,14 @@ bun install
 bun run check
 bun run test
 bun run test:report
+bun run check:format
+# or run all four:
+bun run validate
 ```
 
-The tests use the real simnet PoX-5 contract and sBTC protocol contracts. The
-local signer manager is a test fixture only.
+The tests use the real simnet PoX-5 contract and sBTC protocol contracts. Local
+signer managers and caller-context contracts are test fixtures only and are not
+production generation inputs.
 
 ## Provenance
 
