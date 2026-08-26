@@ -64,19 +64,30 @@ For every lane, generated deployment input orders:
 
 1. publish `sbtc-bond-treasury-X`;
 2. publish `sbtc-bond-staker-X`; and
-3. call `sbtc-bond-staker-X.initialize` with the selected registered signer
-   manager and initial pool operator.
+3. call `sbtc-bond-staker-X.initialize` with its assigned registered signer
+   manager and the initial pool operator.
+
+The six lanes are distributed evenly across three signer-manager inputs:
+
+| Signer-manager input | Lane contracts |
+|---|---|
+| `signerManagerPrincipal1` | `sbtc-bond-staker-0`, `sbtc-bond-staker-3` |
+| `signerManagerPrincipal2` | `sbtc-bond-staker-1`, `sbtc-bond-staker-4` |
+| `signerManagerPrincipal3` | `sbtc-bond-staker-2`, `sbtc-bond-staker-5` |
 
 The JSON files declare, but do not resolve, these controlled deployment inputs:
 
 - Xverse deployer standard principal;
-- registered signer-manager contract principal; and
+- three distinct, deployed, and PoX-5-registered signer-manager contract
+  principals; and
 - initial pool-operator principal.
 
 They contain no private key, mnemonic, fee choice, broadcast instruction, bond
 index, or allowance amount. A controlled deployment system must resolve inputs,
-verify every artifact hash against the manifest, preserve the encoded ordering,
-and review the resulting full contract principals before signing.
+verify that all three signer-manager values are distinct and registered with the
+target PoX-5 contract, verify every artifact hash against the manifest, preserve
+the encoded ordering and lane assignment, and review the resulting full contract
+principals before signing.
 
 After publication and initialization, PoX-5 bond setup must separately create
 the matching allowlist entries before an operator can bind a bond. Contract

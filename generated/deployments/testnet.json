@@ -5,7 +5,9 @@
   "description": "Non-broadcast deployment input. Resolve declared inputs in controlled deployment tooling.",
   "requiredInputs": {
     "xverseDeployerPrincipal": "Stacks standard principal that publishes all 12 contracts",
-    "signerManagerPrincipal": "deployed and PoX-5-registered signer-manager contract principal",
+    "signerManagerPrincipal1": "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 0 and 3",
+    "signerManagerPrincipal2": "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 1 and 4",
+    "signerManagerPrincipal3": "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 2 and 5",
     "poolOperatorPrincipal": "initial keyed operator principal"
   },
   "stakerPrincipalForms": [
@@ -49,7 +51,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal1"
         },
         {
           "clarityName": "pool-operator",
@@ -92,7 +94,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal2"
         },
         {
           "clarityName": "pool-operator",
@@ -135,7 +137,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal3"
         },
         {
           "clarityName": "pool-operator",
@@ -178,7 +180,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal1"
         },
         {
           "clarityName": "pool-operator",
@@ -221,7 +223,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal2"
         },
         {
           "clarityName": "pool-operator",
@@ -264,7 +266,7 @@
       "arguments": [
         {
           "clarityName": "manager",
-          "input": "signerManagerPrincipal"
+          "input": "signerManagerPrincipal3"
         },
         {
           "clarityName": "pool-operator",

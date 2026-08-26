@@ -8,6 +8,7 @@ import {
   LANES,
   NETWORK_NAMES,
   NETWORKS,
+  SIGNER_MANAGER_INPUTS,
   collectFileDrift,
   renderSuite,
   sha256,
@@ -180,19 +181,34 @@ describe("deterministic six-lane generation", () => {
         readFileSync(join(root, `generated/deployments/${network}.json`), "utf8"),
       ) as {
         broadcast: boolean;
+        requiredInputs: Record<string, string>;
         stakerPrincipalForms: string[];
         operations: Array<{
           order: number;
           lane: number;
           type: string;
           contractName: string;
+          function?: string;
+          arguments?: Array<{ clarityName: string; input: string }>;
         }>;
       };
       expect(deployment.broadcast).toBe(false);
+      expect(
+        Object.keys(deployment.requiredInputs).filter((input) =>
+          input.startsWith("signerManagerPrincipal"),
+        ),
+      ).toEqual(SIGNER_MANAGER_INPUTS);
+      expect(deployment.requiredInputs).not.toHaveProperty(
+        "signerManagerPrincipal",
+      );
       expect(deployment.stakerPrincipalForms).toEqual(
         LANES.map((lane) => `<Xverse>.sbtc-bond-staker-${lane}`),
       );
       expect(deployment.operations).toHaveLength(18);
+
+      const managerAssignments = new Map(
+        SIGNER_MANAGER_INPUTS.map((input) => [input, [] as number[]]),
+      );
       for (const lane of LANES) {
         const laneOperations = deployment.operations.filter(
           (operation) => operation.lane === lane,
@@ -208,7 +224,24 @@ describe("deterministic six-lane generation", () => {
           `sbtc-bond-staker-${lane}`,
         ]);
         expect(laneOperations[0]!.order).toBeLessThan(laneOperations[1]!.order);
+
+        const initialize = laneOperations[2]!;
+        expect(initialize.function).toBe("initialize");
+        const managerInput = initialize.arguments?.find(
+          (argument) => argument.clarityName === "manager",
+        )?.input;
+        const expectedManager = SIGNER_MANAGER_INPUTS[lane % 3];
+        expect(managerInput).toBe(expectedManager);
+        managerAssignments
+          .get(managerInput as (typeof SIGNER_MANAGER_INPUTS)[number])
+          ?.push(lane);
       }
+
+      expect(Object.fromEntries(managerAssignments)).toEqual({
+        signerManagerPrincipal1: [0, 3],
+        signerManagerPrincipal2: [1, 4],
+        signerManagerPrincipal3: [2, 5],
+      });
     }
   });
 });

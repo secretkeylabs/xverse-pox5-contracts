@@ -14,6 +14,11 @@ import { fileURLToPath } from "node:url";
 export const CANONICAL_REVISION =
   "1c40228765dabbcaa47809183d3cf17e9d498c20";
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
+export const SIGNER_MANAGER_INPUTS = [
+  "signerManagerPrincipal1",
+  "signerManagerPrincipal2",
+  "signerManagerPrincipal3",
+] as const;
 export const NETWORK_NAMES = ["simnet", "testnet", "mainnet"] as const;
 
 export type NetworkName = (typeof NETWORK_NAMES)[number];
@@ -313,6 +318,13 @@ export function validateArtifactRecords(
   }
 }
 
+export function signerManagerInputForLane(lane: number) {
+  if (!Number.isInteger(lane) || lane < 0 || lane >= LANES.length) {
+    throw new Error(`invalid lane ID ${String(lane)}; expected an integer in 0..5`);
+  }
+  return SIGNER_MANAGER_INPUTS[lane % SIGNER_MANAGER_INPUTS.length]!;
+}
+
 function renderDeploymentInput(
   network: NetworkName,
   records: readonly ArtifactRecord[],
@@ -360,7 +372,7 @@ function renderDeploymentInput(
       function: "initialize",
       senderInput: "xverseDeployerPrincipal",
       arguments: [
-        { clarityName: "manager", input: "signerManagerPrincipal" },
+        { clarityName: "manager", input: signerManagerInputForLane(lane) },
         { clarityName: "pool-operator", input: "poolOperatorPrincipal" },
       ],
       dependsOn: [staker.contractName],
@@ -376,7 +388,12 @@ function renderDeploymentInput(
         "Non-broadcast deployment input. Resolve declared inputs in controlled deployment tooling.",
       requiredInputs: {
         xverseDeployerPrincipal: "Stacks standard principal that publishes all 12 contracts",
-        signerManagerPrincipal: "deployed and PoX-5-registered signer-manager contract principal",
+        signerManagerPrincipal1:
+          "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 0 and 3",
+        signerManagerPrincipal2:
+          "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 1 and 4",
+        signerManagerPrincipal3:
+          "distinct deployed and PoX-5-registered signer-manager contract principal for lanes 2 and 5",
         poolOperatorPrincipal: "initial keyed operator principal",
       },
       stakerPrincipalForms: LANES.map(
