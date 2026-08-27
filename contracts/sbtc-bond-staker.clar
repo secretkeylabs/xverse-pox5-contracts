@@ -450,6 +450,25 @@
   })
 )
 
+(define-read-only (get-member-live-rollover-commitment
+    (member principal)
+  )
+  (match (map-get? member-live-commitment member)
+    generation
+      (if (default-to false (map-get? consumed-generations generation))
+        (ok none)
+        (match (map-get? rollover-commitments {
+            generation: generation,
+            member: member,
+          })
+          commitment (ok (some (merge { generation: generation } commitment)))
+          ERR_NOT_COMMITTED
+        )
+      )
+    (ok none)
+  )
+)
+
 (define-read-only (get-member-rollover-preview
     (member principal)
     (additional-sats uint)

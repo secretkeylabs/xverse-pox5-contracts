@@ -5,6 +5,7 @@ import {
   BOND_INDEX,
   MAX_SATS,
   POX5,
+  STX_VALUE_RATIO,
   TREASURY,
   advanceToBurnHeight,
   bindBond,
@@ -22,6 +23,7 @@ import {
   deposit,
   epoch,
   initializePool,
+  liveRolloverCommitment,
   managerPrincipal,
   member,
   payRewards,
@@ -166,6 +168,51 @@ describe("Xverse lane-0 initialization and launch", () => {
 });
 
 describe("explicit full-position rollover", () => {
+  it("exposes only the authoritative unconsumed live commitment", () => {
+    stakeInitialPool();
+    expect(liveRolloverCommitment(alice)).toBeNull();
+
+    const { cutoff } = bindNextBond(STX_VALUE_RATIO);
+    const current = commitRollover(alice);
+    expect(current.type).toBe("ok");
+    const generation = Number((plain(current) as any).generation);
+    expect(liveRolloverCommitment(alice)).toMatchObject({
+      generation: String(generation),
+      "added-sats": "0",
+      "added-ustx": "0",
+      "target-sats": String(ALICE_SATS),
+    });
+
+    advanceToBurnHeight(cutoff);
+    expect(stake().type).toBe("ok");
+    expect(liveRolloverCommitment(alice)).toBeNull();
+  });
+
+  it("exposes and cancels a zero-asset stale commitment after replacement binding", () => {
+    stakeInitialPool();
+    const { start } = bindNextBond(STX_VALUE_RATIO);
+    const committed = commitRollover(alice);
+    expect(committed.type).toBe("ok");
+    const generation = Number((plain(committed) as any).generation);
+    expect(liveRolloverCommitment(alice)).toMatchObject({
+      generation: String(generation),
+      "added-sats": "0",
+      "added-ustx": "0",
+    });
+
+    advanceToBurnHeight(start + 1);
+    bindNextBond(STX_VALUE_RATIO, MAX_SATS, 18);
+    expect(liveRolloverCommitment(alice)).toMatchObject({
+      generation: String(generation),
+      "added-sats": "0",
+      "added-ustx": "0",
+    });
+    expect(commitRollover(alice)).toBeErr(Cl.uint(130));
+    expect(cancelRollover(alice).type).toBe("ok");
+    expect(liveRolloverCommitment(alice)).toBeNull();
+    expect(commitRollover(alice).type).toBe("ok");
+  });
+
   it("carries a committed member in full and releases a passive member in full", () => {
     stakeInitialPool();
     const aliceOldUstx = Number(settledMember(alice)["bonded-ustx"]);

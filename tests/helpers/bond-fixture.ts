@@ -360,6 +360,10 @@ export const rolloverPreview = (who: string, additionalSats = 0) =>
       Cl.uint(additionalSats),
     ]),
   ) as any;
+export const liveRolloverCommitment = (who: string) =>
+  plain(
+    readPool("get-member-live-rollover-commitment", [Cl.principal(who)]),
+  ) as any;
 export const stakePreview = () => plain(readPool("get-stake-preview")) as any;
 export const poolTotals = () => plain(readPool("get-pool")) as any;
 export const epoch = (index: number) =>
