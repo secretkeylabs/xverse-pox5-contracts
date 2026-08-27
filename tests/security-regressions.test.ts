@@ -30,10 +30,11 @@ import {
   poolPrincipal,
   poolTotals,
   readPool,
-  readPoxNum,
   registerSignerManager,
   requestExit,
   requiredUstx,
+  rewardEpoch,
+  rewardEpochSettlementHeight,
   sbtcBalance,
   setupBond,
   settleMember,
@@ -134,7 +135,7 @@ describe("reward flooring and funded reserve", () => {
     expect(sbtcBalance(poolPrincipal())).toBe(reserve - realizable);
   });
 
-  it("assigns a prior payout to current shares only after the one-cycle tail expires", () => {
+  it("switches reward ownership exactly at the PoX half-cycle boundary", () => {
     stakeFirstBond([
       [alice, 1],
       [bob, 3],
@@ -144,17 +145,73 @@ describe("reward flooring and funded reserve", () => {
     advanceToBurnHeight(cutoff);
     expect(stake().type).toBe("ok");
 
-    const tailCloses = readPoxNum("reward-cycle-to-burn-height", [
-      Cl.uint(Number(epoch(1)["first-reward-cycle"]) + 1),
-    ]);
-    advanceToBurnHeight(tailCloses);
+    const boundary = rewardEpochSettlementHeight();
+    advanceToBurnHeight(boundary - 1);
+    expect(Number(rewardEpoch())).toBe(0);
+    expect(settleMember(bob).type).toBe("ok");
+    expect(Number(member(bob)["tail-epoch"])).toBe(0);
+    expect(Number(member(bob)["tail-shares"])).toBe(3);
 
-    expect(payRewards(carol, 8).type).toBe("ok");
-    const synchronization = syncRewards(dave);
+    expect(payRewards(carol, 4).type).toBe("ok");
+    const priorSynchronization = syncRewards(dave);
+    expect(priorSynchronization.type).toBe("ok");
+    expect(Number(plain(priorSynchronization).epoch)).toBe(0);
+
+    advanceToBurnHeight(boundary);
+    expect(Number(rewardEpoch())).toBe(1);
+    expect(settleMember(bob).type).toBe("ok");
+    expect(member(bob)["tail-epoch"]).toBeNull();
+    expect(Number(member(bob)["tail-shares"])).toBe(0);
+
+    expect(payRewards(carol, 4).type).toBe("ok");
+    const currentSynchronization = syncRewards(dave);
+    expect(currentSynchronization.type).toBe("ok");
+    expect(Number(plain(currentSynchronization).epoch)).toBe(1);
+    expect(claimableRewards(alice)).toBe(5);
+    expect(claimableRewards(bob)).toBe(3);
+
+    advanceToBurnHeight(boundary + 1);
+    expect(Number(rewardEpoch())).toBe(1);
+  });
+
+  it("prevents an exited old member from taking the first successor rewards", () => {
+    stakeFirstBond([
+      [alice, 1_000_000],
+      [bob, 9_000_000],
+    ]);
+    const { cutoff } = bindNextBond();
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(cutoff);
+    expect(stake().type).toBe("ok");
+
+    advanceToBurnHeight(rewardEpochSettlementHeight());
+    expect(Number(rewardEpoch())).toBe(1);
+    expect(payRewards(carol, 10_000_000).type).toBe("ok");
+    const synchronization = syncRewards(bob);
     expect(synchronization.type).toBe("ok");
     expect(Number(plain(synchronization).epoch)).toBe(1);
-    expect(claimableRewards(alice)).toBe(8);
+    expect(claimableRewards(alice)).toBe(10_000_000);
     expect(claimableRewards(bob)).toBe(0);
+  });
+
+  it("uses the successor half-cycle boundary after a gapped rollover", () => {
+    stakeFirstBond([
+      [alice, 1],
+      [bob, 3],
+    ]);
+    const missed = bindNextBond();
+    advanceToBurnHeight(missed.start + 1);
+
+    const delayed = bindNextBond(undefined, MAX_SATS, 18);
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(delayed.cutoff);
+    expect(stake().type).toBe("ok");
+
+    const boundary = rewardEpochSettlementHeight();
+    advanceToBurnHeight(boundary - 1);
+    expect(Number(rewardEpoch())).toBe(0);
+    advanceToBurnHeight(boundary);
+    expect(Number(rewardEpoch())).toBe(1);
   });
 });
 

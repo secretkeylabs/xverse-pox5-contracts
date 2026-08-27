@@ -63,9 +63,12 @@ operation, but cannot persist a nested pool mutation.
 
 PoX-5 calculation, manager claims, per-staker payout, and pool synchronization
 all require submitted transactions. Xverse is the primary keeper and arbitrary
-callers are fallbacks. The old epoch remains the reward target for one complete
-cycle after its successor starts. If all callers neglect the flow through that
-tail, an old payout may be assigned to current shares.
+callers are fallbacks. The old epoch remains the reward target only until the
+first successor-distribution boundary: the successor's first-cycle start plus
+half of PoX-5's runtime reward-cycle length. Xverse must deliver and synchronize
+the old final payout before that boundary. A late old payout, or co-mingled old
+and new payouts, may be assigned to current shares because bare sBTC has no
+earning-epoch tag.
 
 ### Whole-satoshi flooring
 

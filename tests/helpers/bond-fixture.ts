@@ -351,6 +351,10 @@ export const requiredUstx = (sats: number) =>
   num(readPool("get-required-ustx", [Cl.uint(sats)]));
 
 export const poxInfo = () => plain(readPox("get-pox-info")) as any;
+export const rewardEpochSettlementHeight = (successorEpoch = 1) =>
+  readPoxNum("reward-cycle-to-burn-height", [
+    Cl.uint(Number(epoch(successorEpoch)["first-reward-cycle"])),
+  ]) + Math.floor(Number(poxInfo()["reward-cycle-length"]) / 2);
 export const poolConfig = () => plain(readPool("get-config")) as any;
 export const boundBond = () => plain(readPool("get-bound-bond")) as any;
 export const rolloverPreview = (who: string, additionalSats = 0) =>

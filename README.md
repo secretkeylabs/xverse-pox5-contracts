@@ -127,13 +127,18 @@ its per-staker payout arrives as sBTC at the staker contract. `sync-rewards` is
 also permissionless and credits every sBTC sat above existing reward liabilities
 to the oldest bond accounting period still accepting rewards.
 
-A prior bond remains the reward target for one complete reward cycle after its
-successor starts, covering PoX-5's delayed final-cycle payout. Xverse should run
-a keeper that claims the signer-manager payout and calls `sync-rewards`
-promptly; members and other callers remain permissionless fallbacks. If no one
-completes those calls before the prior period's tail closes, its payout can be
-credited to the current bond's shares. That extended keeper failure is an
-accepted operational risk, not an individual member claim deadline. Once a
+A prior bond remains the reward target until half of the successor's first
+reward cycle has elapsed. That is PoX-5's first possible successor-distribution
+boundary. The boundary derives from PoX-5's runtime reward-cycle length rather
+than a network constant, and the same predicate controls both reward targeting
+and the prior member-share tail.
+
+Xverse must run a keeper that completes the prior bond's final signer-manager
+payout and `sync-rewards` before that half-cycle boundary; members and other
+callers remain permissionless fallbacks. If the old payout arrives only after
+the boundary, or old and new payouts are co-mingled before one synchronization,
+the untagged balance can be credited to current shares. That keeper failure is
+an accepted operational risk, not an individual member claim deadline. Once a
 payout is synchronized, members may claim their credited rewards later.
 
 The pool intentionally does not distinguish unsolicited sBTC from signer

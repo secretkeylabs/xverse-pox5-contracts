@@ -655,10 +655,17 @@
 
 (define-read-only (is-epoch-settled (epoch uint))
   (match (map-get? epochs (+ epoch u1))
-    next (>= burn-block-height
-      (contract-call? 'ST000000000000000000002AMW42H.pox-5
-        reward-cycle-to-burn-height (+ (get first-reward-cycle next) u1)
-      ))
+    next (let ((pox-info (unwrap! (contract-call? 'ST000000000000000000002AMW42H.pox-5 get-pox-info)
+        false
+      )))
+      (>= burn-block-height
+        (+
+          (contract-call? 'ST000000000000000000002AMW42H.pox-5
+            reward-cycle-to-burn-height (get first-reward-cycle next)
+          )
+          (/ (get reward-cycle-length pox-info) u2)
+        ))
+    )
     false
   )
 )
@@ -2060,13 +2067,7 @@
   (match (get tail-epoch record)
     epoch (let (
         (index (default-to u0 (get reward-index (map-get? epochs epoch))))
-        (settled (match (map-get? epochs (+ epoch u1))
-          next (>= burn-block-height
-            (contract-call? 'ST000000000000000000002AMW42H.pox-5
-              reward-cycle-to-burn-height (+ (get first-reward-cycle next) u1)
-            ))
-          false
-        ))
+        (settled (is-epoch-settled epoch))
       )
       (merge record {
         pending: (+ (get pending record)
