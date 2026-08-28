@@ -67,6 +67,46 @@ At rollover:
 
 There is no proportional best-effort rollover or partial commitment.
 
+## Early sBTC withdrawal
+
+A live member may release a positive part or all of their currently bonded sBTC
+before the bond unlocks:
+
+```clarity
+(unstake-sbtc-early (manager <signer-manager-trait>) (sats uint))
+```
+
+The call uses `tx-sender` as the member, removes exactly `sats` from PoX-5,
+member/pool bonded principal, and live shares, then forwards the returned sBTC
+to the same-lane treasury as immediately claimable principal. A partial
+withdrawal retains all attributed STX with the residual position. A full
+withdrawal leaves the STX locked and marks a non-cancellable exit; rollover or
+normal wind-down releases that STX later.
+
+An unconsumed current or stale rollover commitment blocks early withdrawal.
+The member must first use `cancel-rollover-commitment` under its existing
+current/stale recovery rules. The withdrawal never resizes or bypasses a frozen
+full-position snapshot. After partial withdrawal, a later commitment covers the
+complete reduced position.
+
+`get-early-unstake-preview(member)` is a one-read position snapshot. It returns
+the maximum withdrawable sats, selected reward epoch, banked rewards, and raw
+`risk-reward-pot`/`risk-total-shares`. An amount-specific quote uses:
+
+```text
+floor(riskRewardPot * requestedSats / riskTotalShares)
+```
+
+Only unrecognized rewards currently targeted to the live epoch are at risk;
+predecessor-tail rewards remain protected. Do not scale the already-floored
+full-position `at-risk-rewards` field. If the final live share would leave while
+live-targeted rewards are unrecognized, the call returns `u135`; permissionless
+`sync-rewards` must succeed before retrying.
+
+If every sat leaves early, `unstake-sbtc` still becomes available only at the
+recorded normal unlock. It then finalizes locally, releases aggregate STX, and
+skips both PoX-5 and sBTC-token zero-amount calls.
+
 ## Commitment timing and principal recovery
 
 The commitment cutoff is the later of the configured stake-window opening and
@@ -133,6 +173,17 @@ boundary. The boundary derives from PoX-5's runtime reward-cycle length rather
 than a network constant, and the same predicate controls both reward targeting
 and the prior member-share tail.
 
+Live epoch shares may shrink through early withdrawal. Each epoch therefore
+maintains `credit-offset` and the invariant:
+
+```text
+credited = floor(totalShares * rewardIndex / 1e12) + creditOffset
+```
+
+Removing shares rebases only the offset, leaving cumulative epoch/global credit
+and every settled member reward unchanged. Later synchronization uses the same
+offset-aware formula.
+
 Xverse must run a keeper that completes the prior bond's final signer-manager
 payout and `sync-rewards` before that half-cycle boundary; members and other
 callers remain permissionless fallbacks. If the old payout arrives only after
@@ -170,19 +221,20 @@ from the treasury to the staker at that point but PoX-5 has not taken custody
 yet. The staker therefore keeps a protocol-transition guard active from before
 the first principal movement through completion of PoX-5 and local accounting.
 
-Every public state-changing staker entry point checks the guard before writing
-and returns error `u134` when a nested callback reaches it while the transition
-is active; Clarity separately rejects direct same-function recursion. Read-only
+Every public state-changing staker entry point, including early withdrawal,
+checks the guard before writing and returns error `u134` when a nested callback
+reaches it while the transition is active; Clarity separately rejects direct
+same-function recursion. The early PoX-5/token path keeps the guard set through
+protocol removal, treasury forwarding, and local completion. Read-only
 inspection remains available. A signer manager must not depend on mutating the
-pool during `validate-stake!`;
-failed outer transitions roll the guard and every asset/counter change back
-atomically. The intended Xverse signer manager's reviewed validation path only
+pool during `validate-stake!`; failed outer transitions roll the guard and every
+asset/counter change back atomically. The intended Xverse signer manager's reviewed validation path only
 updates manager-local state and is compatible with this boundary.
 
 The test suite includes an adversarial manager that calls reward, claim,
-settlement, and protocol entry points during validation, including the exact
-growing-rollover sequence that would otherwise recognize temporary principal
-as rewards.
+settlement, ordinary wind-down, and early-withdrawal entry points during
+validation, including the exact growing-rollover sequence that would otherwise
+recognize temporary principal as rewards.
 
 The production compatibility pin is `secretkeylabs/pool-contracts` revision
 `2e6e418c9918af0366cc5640fb281c1419c20e04`. Its three generated mainnet signer
@@ -262,9 +314,9 @@ git diff --exit-code -- contracts Clarinet.toml generated deployments/default.si
 The tests use the real simnet PoX-5 contract and sBTC protocol contracts. The
 six-lane suite exercises concurrent memberships, every `N -> N+6` rollover,
 exhaustive modulo-lane rejection, treasury authority, lane-local liabilities,
-reward dust, caller contexts, and failure/wind-down isolation. The report check
-requires 67/67 canonical-equivalent functions, all 20 public cost paths, and 42
-critical per-lane cost paths.
+reward dust, caller contexts, and failure/wind-down isolation. The report check requires complete canonical-equivalent function coverage,
+every public cost path, and the eight critical paths on all six lanes, including
+`unstake-sbtc-early`.
 
 Local signer managers and caller-context contracts are test fixtures only and
 are not production generation inputs. Exact generated hashes and protocol

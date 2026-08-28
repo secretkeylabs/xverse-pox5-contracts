@@ -6,6 +6,8 @@ is generated and validated separately.
 ## Assets and accounting boundaries
 
 - PoX-5 holds live bonded sBTC and locks the staker principal's bonded STX.
+- Early withdrawal removes exactly the member's requested sBTC and live shares;
+  it does not release their attributed STX before normal roll or wind-down.
 - The paired treasury holds exactly accounted queued and released sBTC plus any
   separately measurable mistaken direct transfer.
 - The staker's liquid sBTC is reward balance, never principal during a completed
@@ -28,8 +30,10 @@ sBTC above accounted principal. Operators cannot select claim recipients for
 member principal or rewards.
 
 Staking, wind-down, synchronization, settlement, and pay-to-member claims are
-permissionless. Permissionless callers progress deterministic state or pay the
-recorded member; they cannot redirect member assets.
+permissionless. Early withdrawal is self-service under effective `tx-sender`;
+neither an operator nor a permissionless caller can choose another member.
+Permissionless callers progress deterministic state or pay the recorded member;
+they cannot redirect member assets.
 
 All member and authority identity uses `tx-sender`. Ordinary forwarding retains
 the transaction origin's authority for that transaction. `as-contract?` changes
@@ -55,9 +59,31 @@ A failing external call rolls the complete Clarity transaction back.
 ### Signer-manager callbacks
 
 PoX-5 may call the configured manager while principal is temporarily in transit.
-Every public pool mutator rejects during that transition with `u134`. Read-only
-observation remains possible. A manager may reject and roll back the outer
-operation, but cannot persist a nested pool mutation.
+Every public pool mutator rejects during that transition with `u134`. Early
+withdrawal sets the same guard before its PoX-5/token path and clears it only
+after same-lane treasury forwarding succeeds. Read-only observation remains
+possible. A manager or protocol dependency may reject and roll back the outer
+operation, but cannot persist a nested pool mutation or a partial withdrawal.
+
+### Early-withdrawal reward timing
+
+Already recognized rewards and predecessor-tail claims remain member-owned.
+Unrecognized rewards selected for the live epoch are split only when
+`sync-rewards` runs; withdrawing shares before that call forfeits their exact
+raw-pot proportion to the remaining shares. Removing the final live share is
+blocked with `u135` while such a balance exists. This does not identify the true
+earning epoch of an untagged late payout and does not replace prompt keeper
+operation.
+
+### Commitment snapshots and delayed STX
+
+Every unconsumed current, stale, or dangling commitment marker blocks early
+withdrawal until explicit cancellation/recovery. The call never rewrites frozen
+commitment aggregates. A full early withdrawal leaves a non-cancellable
+STX-only exit marker: the sBTC is claimable immediately, while STX remains
+locked until roll or normal unlock. If all sats have left, normal wind-down
+finalizes without a zero token/PoX call and releases the remaining STX
+liability.
 
 ### Reward keeper outage
 
@@ -105,5 +131,5 @@ every derivative must match `generated/artifact-manifest.json` under
 `bun run check:generated`. Contracts prefixed `test-` and
 `deployments/default.simnet-plan.yaml` are simnet-only. Every lane artifact must
 derive from canonical source revision
-`e9c1e114109d060253905dc28971ccafc594f994`, as pinned in its generated header
-and `generated/artifact-manifest.json`.
+the exact canonical revision pinned in its generated header and
+`generated/artifact-manifest.json`.

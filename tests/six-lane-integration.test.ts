@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   TEST_CALLER,
   advanceToBurnHeight,
+  avoidPreparePhase,
   deployer,
   expectOk,
   plain,
@@ -42,6 +43,7 @@ import {
   stakeInitialLane,
   stakeLane,
   syncLaneRewards,
+  unstakeEarlyLane,
   unstakeLane,
   withdrawLane,
 } from "./helpers/six-lane-fixture";
@@ -142,6 +144,42 @@ describe("generated lane mapping", () => {
 });
 
 describe("six-lane reward and liability isolation", () => {
+  it("executes simultaneous early withdrawals without cross-lane mutation", () => {
+    initializeLanes();
+    for (const lane of LANE_IDS) {
+      stakeInitialLane(lane, lane + 6, [[alice, 1_000 + lane]]);
+    }
+    avoidPreparePhase();
+
+    for (const lane of LANE_IDS) {
+      const amount = lane + 1;
+      const unaffected = new Map(
+        LANE_IDS.filter((other) => other !== lane).map((other) => [
+          other,
+          laneSnapshot(other),
+        ]),
+      );
+      expectOk(
+        unstakeEarlyLane(lane, alice, amount),
+        `early withdraw lane ${lane}`,
+      );
+      expect(n(lanePool(lane), "bonded-sats")).toBe(1_000 + lane - amount);
+      expect(n(laneSettledMember(lane, alice), "bonded-sats")).toBe(
+        1_000 + lane - amount,
+      );
+      expect(laneTreasuryBalance(lane)).toBe(amount);
+      expect(n(laneMembership(lane), "amount-sats")).toBe(
+        1_000 + lane - amount,
+      );
+
+      for (const other of LANE_IDS.filter((other) => other !== lane)) {
+        expect(laneSnapshot(other)).toEqual(unaffected.get(other));
+      }
+    }
+
+    for (const lane of LANE_IDS) assertLaneSolvent(lane, [alice]);
+  });
+
   it("retains repeated recognized flooring dust independently in every lane", () => {
     initializeLanes();
     for (const lane of LANE_IDS) {

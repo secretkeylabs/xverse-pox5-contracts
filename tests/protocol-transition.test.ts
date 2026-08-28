@@ -95,6 +95,7 @@ describe("PoX signer callback transition guard", () => {
       "claim-principal": String(TRANSITION_ERROR),
       "settle-member": String(TRANSITION_ERROR),
       "nested-unstake": String(TRANSITION_ERROR),
+      "nested-early-unstake": String(TRANSITION_ERROR),
     });
     expect(Number(poolTotals()["total-credited"])).toBe(0);
     expect(Number(poolTotals()["unclaimed-rewards"])).toBe(0);

@@ -235,6 +235,18 @@ export const unstakeSbtc = (who = deployer, manager = MANAGER) =>
     who,
   ).result;
 
+export const unstakeEarly = (
+  who: string,
+  sats: number,
+  manager = MANAGER,
+) =>
+  simnet.callPublicFn(
+    POOL,
+    "unstake-sbtc-early",
+    [Cl.principal(managerPrincipal(manager)), Cl.uint(sats)],
+    who,
+  ).result;
+
 export const setValidationMode = (mode: number, manager = CALLBACK_MANAGER) =>
   simnet.callPublicFn(
     manager,
@@ -381,6 +393,22 @@ export const claimableRewards = (who: string) =>
 export const claimablePrincipal = (who: string) =>
   plain(readPool("get-claimable-principal", [Cl.principal(who)])) as any;
 export const rewardEpoch = () => plain(readPool("get-reward-epoch"));
+export const earlyUnstakePreview = (who: string) =>
+  plain(
+    readPool("get-early-unstake-preview", [Cl.principal(who)]),
+  ) as any;
+export const custodiedSats = () =>
+  readPoxNum("get-staker-custodied-sbtc", [Cl.principal(poolPrincipal())]);
+export function inPreparePhase() {
+  const cycle = readPoxNum("current-pox-reward-cycle");
+  return plain(readPox("is-in-prepare-phase", [Cl.uint(cycle)])) === true;
+}
+export function avoidPreparePhase() {
+  for (let guard = 0; inPreparePhase() && guard < 200; guard += 1) {
+    simnet.mineEmptyBurnBlocks(10);
+  }
+  return simnet.burnBlockHeight;
+}
 export const unattributedPrincipal = () =>
   num(readPool("get-unattributed-principal"));
 export const unrecognizedRewards = () =>

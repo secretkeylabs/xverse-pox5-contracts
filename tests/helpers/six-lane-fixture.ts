@@ -208,6 +208,18 @@ export const unstakeLane = (
     [Cl.principal(managerPrincipal(manager))],
     sender,
   );
+export const unstakeEarlyLane = (
+  lane: number,
+  sender: string,
+  sats: number,
+  manager = MANAGER,
+) =>
+  callLane(
+    lane,
+    "unstake-sbtc-early",
+    [Cl.principal(managerPrincipal(manager)), Cl.uint(sats)],
+    sender,
+  );
 
 export function payLaneReward(lane: number, from: string, amount: number) {
   return simnet.callPublicFn(

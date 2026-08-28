@@ -130,6 +130,28 @@ describe("deterministic six-lane generation", () => {
     }
   });
 
+  it("puts early withdrawal and offset accounting in every staker only", () => {
+    const suite = renderCanonical();
+    for (const artifact of suite.artifacts) {
+      const content = suite.files.get(artifact.relativePath)!;
+      if (artifact.kind === "staker") {
+        expect(content).toContain("(define-public (unstake-sbtc-early");
+        expect(content).toContain("(define-read-only (get-early-unstake-preview");
+        expect(content).toContain("(define-constant ERR_REWARDS_PENDING (err u135))");
+        expect(content).toContain("credit-offset: uint");
+        expect(content).toContain('topic: "unstake-sbtc-early"');
+        expect(content).toContain("(map-get? member-live-commitment member)");
+        expect(content).toContain(
+          "generation (default-to false (map-get? consumed-generations generation))",
+        );
+        expect(content).toContain(`.sbtc-bond-treasury-${artifact.lane}`);
+      } else {
+        expect(content).not.toContain("unstake-sbtc-early");
+        expect(content).not.toContain("credit-offset");
+      }
+    }
+  });
+
   it("uses only declared lane and network substitutions", () => {
     const suite = renderCanonical();
     for (const artifact of suite.artifacts) {

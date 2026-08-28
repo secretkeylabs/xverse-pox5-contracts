@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   POX5,
   advanceToBurnHeight,
+  avoidPreparePhase,
   bindNextBond,
   bootstrap,
   cancelRollover,
@@ -29,6 +30,7 @@ import {
   treasuryBalance,
   unattributedPrincipal,
   unrecognizedRewards,
+  unstakeEarly,
   withdraw,
 } from "./helpers/bond-fixture";
 
@@ -110,6 +112,13 @@ describe("per-instance accounting properties", () => {
     expect(stake().type).toBe("ok");
     assertAccounting(members);
 
+    const earlyAmount = amounts[0] > 1 ? Math.max(1, Math.floor(amounts[0] / 3)) : 0;
+    if (earlyAmount > 0) {
+      avoidPreparePhase();
+      expect(unstakeEarly(members[0], earlyAmount).type).toBe("ok");
+      assertAccounting(members);
+    }
+
     for (const payout of [7, amounts.reduce((a, b) => a + b, 0) + 17, 11]) {
       expect(payRewards(dave, payout).type).toBe("ok");
       expect(syncRewards(carol).type).toBe("ok");
@@ -152,7 +161,7 @@ describe("per-instance accounting properties", () => {
     assertAccounting(members);
 
     expect(value(settledMember(members[0]), "bonded-sats")).toBe(
-      amounts[0] + addition,
+      amounts[0] - earlyAmount + addition,
     );
     for (const who of members.slice(1)) {
       expect(value(settledMember(who), "bonded-sats")).toBe(0);

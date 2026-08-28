@@ -100,6 +100,7 @@ const requiredEveryLane = [
   "commit-rollover",
   "settle-member",
   "sync-rewards",
+  "unstake-sbtc-early",
 ];
 for (let lane = 0; lane < 6; lane += 1) {
   const contractSuffix = `.sbtc-bond-staker-${lane}`;
@@ -161,7 +162,10 @@ if (maximum.ratio >= 1) {
 
 console.log(`canonical-equivalent function coverage: ${definitions.size}/${definitions.size}`);
 console.log(`public cost paths: ${publicMethods.size}/${publicMethods.size}`);
-console.log("critical six-lane cost paths: 42/42");
+const criticalPathCount = requiredEveryLane.length * 6;
+console.log(
+  `critical six-lane cost paths: ${criticalPathCount}/${criticalPathCount}`,
+);
 console.log(
   `maximum observed cost: ${(maximum.ratio * 100).toFixed(4)}% ${maximum.dimension} ` +
     `${maximum.contract}::${maximum.method}`,

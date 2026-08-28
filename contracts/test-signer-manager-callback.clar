@@ -20,12 +20,14 @@
   claim-principal: uint,
   settle-member: uint,
   nested-unstake: uint,
+  nested-early-unstake: uint,
 } {
   sync-rewards: u0,
   claim-rewards: u0,
   claim-principal: u0,
   settle-member: u0,
   nested-unstake: u0,
+  nested-early-unstake: u0,
 })
 
 (define-public (validate-stake!
@@ -92,6 +94,12 @@
                   result u0
                   error error
                 ))
+                (nested-early-unstake-error (match (contract-call? .sbtc-bond-staker-0 unstake-sbtc-early
+                  .test-signer-manager u1
+                )
+                  result u0
+                  error error
+                ))
               )
               (var-set callback-errors {
                 sync-rewards: sync-error,
@@ -99,6 +107,7 @@
                 claim-principal: claim-principal-error,
                 settle-member: settle-member-error,
                 nested-unstake: nested-unstake-error,
+                nested-early-unstake: nested-early-unstake-error,
               })
               (ok true)
             )
@@ -120,6 +129,7 @@
       claim-principal: u0,
       settle-member: u0,
       nested-unstake: u0,
+      nested-early-unstake: u0,
     })
     (ok mode)
   )
