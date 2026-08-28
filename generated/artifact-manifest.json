@@ -6,7 +6,7 @@
   "canonicalSources": {
     "staker": {
       "path": "contracts/sbtc-bond-staker.clar",
-      "sha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82"
+      "sha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3"
     },
     "treasury": {
       "path": "contracts/sbtc-bond-treasury.clar",
@@ -47,8 +47,8 @@
       "siblingName": "sbtc-bond-treasury-0",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-0.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "c4e94ad377e692ff4c8e570e524216a8436cb3badc9f3ab013961f7828a72bd6"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "4267f646441f0154198d71264f30bf7b547edf9fc33284a5da5000611b312619"
     },
     {
       "network": "simnet",
@@ -69,8 +69,8 @@
       "siblingName": "sbtc-bond-treasury-1",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-1.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "3338db6f2576a73a3cb9d018429a96acfbd6731aff61b14ecd9d74c972e9916b"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "b76cfcfa3d4a534a1b96a70b2af20d4f0d0b59dfcb0d78ec226eb416f4b00a0a"
     },
     {
       "network": "simnet",
@@ -91,8 +91,8 @@
       "siblingName": "sbtc-bond-treasury-2",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-2.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "3a9c413e920f959809c8b3466782dbb6c6df6a976fe40b622d7ad0f57f647544"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "2cb35b5e77d875529511c14923c16cd5dfb28a19bcdaaccdaa55a95027a37f18"
     },
     {
       "network": "simnet",
@@ -113,8 +113,8 @@
       "siblingName": "sbtc-bond-treasury-3",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-3.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "5da345eb262c405b100b9b4d3cee9b2a3ef67c963cc4943440ca17fb14d79b1b"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "36f2e871b7fe4120aa8d2d4045bb092bf9079c8bffcb2d59fc4b908403e09b19"
     },
     {
       "network": "simnet",
@@ -135,8 +135,8 @@
       "siblingName": "sbtc-bond-treasury-4",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-4.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "c23fd707759b7215083f03a5a758ebd56efba6e762ea29a51bf39a1a33170764"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "30e736593957c2459f9b6b900e297d7ad080632fd6bd03f414dc356276f147d7"
     },
     {
       "network": "simnet",
@@ -157,8 +157,8 @@
       "siblingName": "sbtc-bond-treasury-5",
       "relativePath": "contracts/generated/simnet/sbtc-bond-staker-5.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "f6b7f5e330ac235656d637de7d859d8253ebf50b26251ee22ea23e161c5e1973"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "78a1e6b1fed214ac90a0c426cf37f4217b98d40d9bd201cc6fe2d03d1589e335"
     },
     {
       "network": "testnet",
@@ -179,8 +179,8 @@
       "siblingName": "sbtc-bond-treasury-0",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-0.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "1eac5fefd6c3da6ace070c343e7dfad53698cdca056861996f038767b7be8bf4"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "da077a67986327de465f86205dbda197fb9e9549a3854bccb4122b99db5ea347"
     },
     {
       "network": "testnet",
@@ -201,8 +201,8 @@
       "siblingName": "sbtc-bond-treasury-1",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-1.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "e54a3d388c1df333909a9eb35588c04a8ea1d13609cea16750f1a39c8bedfcb1"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "fe544445d4bc6fc2482ec2ab98844c6ba381590c506ebfbdad9e5263a837e647"
     },
     {
       "network": "testnet",
@@ -223,8 +223,8 @@
       "siblingName": "sbtc-bond-treasury-2",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-2.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "61ab29d264f4bd2ae559be5a79d5d235219dec61ea92c99ed4dd5b3fed09f425"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "382fb9cf81c9dfed6cc1d2bfd57c8edf5ef9224f7f0c1d9482dc6c116d927cf1"
     },
     {
       "network": "testnet",
@@ -245,8 +245,8 @@
       "siblingName": "sbtc-bond-treasury-3",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-3.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "36fa32a59a464084524badd83c615edd4b0e759e3571dbcfdc56d1182f4767c7"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "c69feca1585966fb04d3b705b2417e5302ccb1119ccbbc788d9f85a8c1aa135a"
     },
     {
       "network": "testnet",
@@ -267,8 +267,8 @@
       "siblingName": "sbtc-bond-treasury-4",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-4.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "4fdc39ff8319cb2ab93157a0e15541550ed8dccc15dcdad983b25240cae07516"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "27a7a7f00b85b38307f070e82b131bfbc79298d9def480f170957eb189ee16dd"
     },
     {
       "network": "testnet",
@@ -289,8 +289,8 @@
       "siblingName": "sbtc-bond-treasury-5",
       "relativePath": "contracts/generated/testnet/sbtc-bond-staker-5.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "2235cfa49f23b41e51ed38d0907850a1138d6d512cb23fd6f1b1543e225067c7"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "5bc0eaaf9ff0cc216eef55c45551393abbef617568d2429bdd98261bff35240b"
     },
     {
       "network": "mainnet",
@@ -311,8 +311,8 @@
       "siblingName": "sbtc-bond-treasury-0",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-0.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "d46a6b9e4f9cff6e5dac7dff45501c4ed93c55ae0a9484b55ccb4b3b4348244e"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "e869543dcc771ea51f7871e875de558038adc75942e09b4cef2e78a793253376"
     },
     {
       "network": "mainnet",
@@ -333,8 +333,8 @@
       "siblingName": "sbtc-bond-treasury-1",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-1.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "786a80214b5252bfb736325980a3f60517b0e94cc9879f5169e61ec847f4e973"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "f9795a9b90dd497efdf6e06083b14ada08507a36b484766e9b2240436d145dfe"
     },
     {
       "network": "mainnet",
@@ -355,8 +355,8 @@
       "siblingName": "sbtc-bond-treasury-2",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-2.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "7f624d23a9c5cd2acca921a8e453afd92c319d62fd91f82cab6cc85f2e6293cc"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "2a30687554f91e9c321e2c249d054f5f33af756d82fb82a7bf7078a4938252fd"
     },
     {
       "network": "mainnet",
@@ -377,8 +377,8 @@
       "siblingName": "sbtc-bond-treasury-3",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-3.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "922a86981f143e949b2d24fb239c903e71babebbbfcd22f6ece9035d6662ea68"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "288d497486a52047b1ee3ecec658f146cb709144b7e5dcdb67e5c976810dc3c0"
     },
     {
       "network": "mainnet",
@@ -399,8 +399,8 @@
       "siblingName": "sbtc-bond-treasury-4",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-4.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "ceab4a3379079c6fb77434e531a4eff5fa780173d4a1d6a8932306d992c18edc"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "89a4b51041e6e7378911c9556a9c8aacbf3ad02d847bf0fed06108ed233f001d"
     },
     {
       "network": "mainnet",
@@ -421,8 +421,8 @@
       "siblingName": "sbtc-bond-treasury-5",
       "relativePath": "contracts/generated/mainnet/sbtc-bond-staker-5.clar",
       "canonicalSourcePath": "contracts/sbtc-bond-staker.clar",
-      "canonicalSourceSha256": "e9d5528a22ef9b81c34879ecee4d42d92fc7f9e6c8ac7c0b219d3323b2db6b82",
-      "artifactSha256": "70ec901f32107b71c000b76fae602c82ab9eae40d72a328ad4728e3c70444723"
+      "canonicalSourceSha256": "d3b5b5f59dbcb46acdc56a4fbea71442c162259389041ec07e091c4c5bcbb1c3",
+      "artifactSha256": "2de6937155f1770e90f2c545a1ea5b10b864c335f7fbc6b26df43ebb25f160d6"
     }
   ]
 }

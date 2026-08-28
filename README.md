@@ -100,12 +100,16 @@ floor(riskRewardPot * requestedSats / riskTotalShares)
 Only unrecognized rewards currently targeted to the live epoch are at risk;
 predecessor-tail rewards remain protected. Do not scale the already-floored
 full-position `at-risk-rewards` field. If the final live share would leave while
-live-targeted rewards are unrecognized, the call returns `u135`; permissionless
-`sync-rewards` must succeed before retrying.
+live-targeted rewards are unrecognized, the call returns `u135`; one successful
+permissionless `sync-rewards` consumes that complete snapshot surplus before
+retrying. The transactions are not atomic, so a new transfer mined between them
+can re-trigger the guard.
 
 If every sat leaves early, `unstake-sbtc` still becomes available only at the
 recorded normal unlock. It then finalizes locally, releases aggregate STX, and
-skips both PoX-5 and sBTC-token zero-amount calls.
+skips both PoX-5 and sBTC-token zero-amount calls. A reward or donation arriving
+after all shares leave has no member reward weight; `sync-rewards` classifies it
+as funded, permanently locked terminal dust without blocking STX wind-down.
 
 ## Commitment timing and principal recovery
 
@@ -181,8 +185,11 @@ credited = floor(totalShares * rewardIndex / 1e12) + creditOffset
 ```
 
 Removing shares rebases only the offset, leaving cumulative epoch/global credit
-and every settled member reward unchanged. Later synchronization uses the same
-offset-aware formula.
+and every settled member reward unchanged. Later synchronization sets a
+cumulative funded target, selects the greatest reward index whose aggregate
+indexed credit does not exceed that target, and places only any
+index-unrepresentable remainder into the offset. The complete current surplus
+is therefore recognized in one successful call without over-crediting it.
 
 Xverse must run a keeper that completes the prior bond's final signer-manager
 payout and `sync-rewards` before that half-cycle boundary; members and other
@@ -193,25 +200,28 @@ an accepted operational risk, not an individual member claim deadline. Once a
 payout is synchronized, members may claim their credited rewards later.
 
 The pool intentionally does not distinguish unsolicited sBTC from signer
-rewards. Any bare sBTC transferred to the staker is a donation and is allocated
-on the next successful `sync-rewards`. No separate donation ledger, attribution
-proof, monitoring requirement, or sweep path is provided.
+rewards. Any bare sBTC transferred while the selected epoch has shares is a
+donation and is included in the next successful `sync-rewards`. If the selected
+epoch has zero shares, the transfer is recognized only as permanently locked
+terminal dust. No separate donation ledger, attribution proof, monitoring
+requirement, or sweep path is provided.
 
 ### Whole-satoshi flooring and locked dust
 
-Reward indices use `PRECISION = 1e12`. Aggregate synchronization and every
+Reward indices use `PRECISION = 1e12`. Aggregate index representation and every
 member settlement floor independently to whole sats. Settlement persists the
 new checkpoint even when a fractional entitlement floors to zero. Consequently,
-repeated settlements and many members can permanently lock multiple recognized
-sats; there is no lifetime or pool-wide one-sat bound.
+repeated synchronization/settlement, many members, index granularity, and
+zero-share transfers can permanently lock multiple recognized sats; there is no
+lifetime or pool-wide one-sat bound.
 
 Locked dust remains funded at the staker and is included in
 `total-credited - total-paid`, but it is not a realizable member claim,
 unrecognized reward, future-bond reward, or sweepable balance. The resulting
 reward reserve is conservative: it can exceed the sum of realizable member
-claims without affecting principal solvency. This inherited behavior is
-intentional; the pool has no fractional carry, redistribution, claim expiry,
-finalization, or reward sweep.
+claims without affecting principal solvency. This behavior is intentional; the
+pool has no fractional carry, redistribution, claim expiry, finalization payout,
+or reward sweep.
 
 ## Signer callback safety
 

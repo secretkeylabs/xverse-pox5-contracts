@@ -10,6 +10,7 @@ import {
   cancelExit,
   cancelRollover,
   claimPrincipal,
+  claimRewards,
   claimableRewards,
   commitRollover,
   custodiedSats,
@@ -33,6 +34,7 @@ import {
   stxBalance,
   syncRewards,
   treasuryBalance,
+  unrecognizedRewards,
   unstakeEarly,
   unstakeSbtc,
   withdraw,
@@ -370,6 +372,100 @@ describe("member-initiated early sBTC withdrawal", () => {
     expect(earlyUnstakePreview(alice)["full-exit-requires-reward-sync"]).toBe(false);
     expect(unstakeEarly(alice, 4).type).toBe("ok");
     expect(claimableRewards(alice)).toBe(4);
+  });
+
+  it.each([1, 2])(
+    "consumes a non-divisible %i-sat surplus in one sync before exact full exit",
+    (reward) => {
+      stakeFirstBond([[alice, 3]]);
+      avoidPreparePhase();
+      expect(payRewards(bob, reward).type).toBe("ok");
+      expect(earlyUnstakePreview(alice)).toMatchObject({
+        "risk-reward-pot": String(reward),
+        "risk-total-shares": "3",
+        "full-exit-requires-reward-sync": true,
+      });
+
+      expect(plain(syncRewards(bob))).toMatchObject({
+        recognized: String(reward),
+      });
+      expect(unrecognizedRewards()).toBe(0);
+      expect(earlyUnstakePreview(alice)["full-exit-requires-reward-sync"]).toBe(
+        false,
+      );
+      expect(unstakeEarly(alice, 3).type).toBe("ok");
+      expect(claimableRewards(alice)).toBe(reward);
+    },
+  );
+
+  it("fails closed when a new reward arrives between sync and final withdrawal", () => {
+    stakeFirstBond([[alice, 3]]);
+    avoidPreparePhase();
+    expect(payRewards(bob, 1).type).toBe("ok");
+    expect(syncRewards(bob).type).toBe("ok");
+
+    expect(payRewards(bob, 1).type).toBe("ok");
+    expect(unstakeEarly(alice, 3)).toBeErr(Cl.uint(135));
+    expect(syncRewards(bob).type).toBe("ok");
+    expect(unstakeEarly(alice, 3).type).toBe("ok");
+    expect(claimableRewards(alice)).toBe(2);
+  });
+
+  it("recognizes a post-zero-share transfer only as locked terminal dust", () => {
+    stakeFirstBond([[alice, 3]]);
+    avoidPreparePhase();
+    expect(unstakeEarly(alice, 3).type).toBe("ok");
+    expect(epoch(0)["total-shares"]).toBe("0");
+
+    expect(payRewards(bob, 1).type).toBe("ok");
+    expect(unrecognizedRewards()).toBe(1);
+    expect(plain(syncRewards(bob))).toMatchObject({
+      epoch: "0",
+      recognized: "1",
+    });
+    expect(unrecognizedRewards()).toBe(0);
+    expect(epoch(0)).toMatchObject({
+      "total-shares": "0",
+      credited: "1",
+      "credit-offset": "1",
+    });
+    expect(poolTotals()).toMatchObject({
+      "total-credited": "1",
+      "total-paid": "0",
+      "unclaimed-rewards": "1",
+    });
+    expect(claimableRewards(alice)).toBe(0);
+    expect(claimRewards(alice)).toBeErr(Cl.uint(114));
+  });
+
+  it("locks an unsynchronized predecessor balance if selection reaches a zero-share live epoch", () => {
+    stakeTwoMembers();
+    const { cutoff } = bindNextBond();
+    expect(commitRollover(alice).type).toBe("ok");
+    expect(commitRollover(bob).type).toBe("ok");
+    advanceToBurnHeight(cutoff);
+    expect(stake().type).toBe("ok");
+
+    const boundary = rewardEpochSettlementHeight();
+    advanceToBurnHeight(boundary - 1);
+    expect(Number(rewardEpoch())).toBe(0);
+    expect(payRewards(carol, 4).type).toBe("ok");
+    expect(unstakeEarly(alice, ALICE_SATS).type).toBe("ok");
+    expect(unstakeEarly(bob, BOB_SATS).type).toBe("ok");
+    expect(epoch(1)["total-shares"]).toBe("0");
+
+    advanceToBurnHeight(boundary);
+    expect(Number(rewardEpoch())).toBe(1);
+    expect(plain(syncRewards(dave))).toMatchObject({
+      epoch: "1",
+      recognized: "4",
+    });
+    expect(epoch(1)).toMatchObject({
+      credited: "4",
+      "credit-offset": "4",
+    });
+    expect(claimableRewards(alice)).toBe(0);
+    expect(claimableRewards(bob)).toBe(0);
   });
 
   it("rolls back local state when PoX rejects during prepare phase", () => {

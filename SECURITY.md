@@ -13,7 +13,8 @@ is generated and validated separately.
 - The staker's liquid sBTC is reward balance, never principal during a completed
   transaction.
 - `total-credited - total-paid` is a funded, conservative reward reserve. It may
-  include permanently inaccessible member-flooring dust.
+  include permanently inaccessible member-flooring, index-granularity, and
+  zero-share terminal dust.
 - The treasury accepts payouts only from its paired staker. Operators and signer
   managers have no direct principal withdrawal path.
 
@@ -71,9 +72,11 @@ Already recognized rewards and predecessor-tail claims remain member-owned.
 Unrecognized rewards selected for the live epoch are split only when
 `sync-rewards` runs; withdrawing shares before that call forfeits their exact
 raw-pot proportion to the remaining shares. Removing the final live share is
-blocked with `u135` while such a balance exists. This does not identify the true
-earning epoch of an untagged late payout and does not replace prompt keeper
-operation.
+blocked with `u135` while such a balance exists. One successful synchronization
+recognizes the complete snapshot surplus, but a new transfer between that call
+and the non-atomic withdrawal can re-trigger the guard. This does not identify
+the true earning epoch of an untagged late payout and does not replace prompt
+keeper operation.
 
 ### Commitment snapshots and delayed STX
 
@@ -96,11 +99,19 @@ the old final payout before that boundary. A late old payout, or co-mingled old
 and new payouts, may be assigned to current shares because bare sBTC has no
 earning-epoch tag.
 
-### Whole-satoshi flooring
+### Whole-satoshi flooring and terminal dust
 
-Each settlement floors independently and advances its checkpoint. Repeated
-settlements can permanently lock recognized sats. Locked dust is funded but
-cannot be claimed, redistributed, rolled into a future epoch, or swept.
+Synchronization chooses the greatest aggregate reward index that does not
+exceed its complete funded target and puts any index-unrepresentable remainder
+in `credit-offset`. Each member settlement still floors independently and
+advances its checkpoint. Repeated synchronization/settlement can permanently
+lock recognized sats.
+
+If the selected epoch has zero shares, `sync-rewards` recognizes a later bare
+sBTC transfer entirely into offset-backed terminal dust. No member owns a
+remaining reward weight, so the balance cannot be claimed, redistributed,
+rolled into a future epoch, treated as principal, or swept. This conservative
+classification cannot block delayed STX wind-down.
 
 ### Missed seamless replacement
 
@@ -111,9 +122,11 @@ There is no grace period or operator veto.
 
 ### Unsolicited transfers
 
-Bare sBTC sent to the staker is an intentional reward donation. sBTC sent
-straight to the treasury is not attributed to a member and may be swept by an
-operator only to the extent it exceeds queued and released principal.
+Bare sBTC sent to the staker is an intentional reward donation while the
+selected epoch has shares, and becomes permanently locked terminal dust when it
+has none. sBTC sent straight to the treasury is not attributed to a member and
+may be swept by an operator only to the extent it exceeds queued and released
+principal.
 
 ### Forwarding contracts
 

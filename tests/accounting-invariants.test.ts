@@ -89,6 +89,59 @@ function assertAccounting(memberPrincipals: string[]) {
   }
 }
 
+describe("complete-surplus reward arithmetic", () => {
+  it("maximizes the funded index and preserves exact credit across granularity", () => {
+    const scale = 100n;
+    const ceilDiv = (numerator: bigint, denominator: bigint) =>
+      (numerator + denominator - 1n) / denominator;
+
+    const shareCases = [
+      0n,
+      1n,
+      2n,
+      3n,
+      7n,
+      11n,
+      49n,
+      50n,
+      51n,
+      99n,
+      100n,
+      101n,
+      149n,
+      199n,
+      250n,
+    ];
+    for (const shares of shareCases) {
+      for (let index = 0n; index <= 120n; index += 13n) {
+        for (let offset = 0n; offset <= 12n; offset += 3n) {
+          const credited = (shares * index) / scale + offset;
+          for (let surplus = 1n; surplus <= 12n; surplus += 1n) {
+            const target = credited + surplus;
+            const targetIndexed = target - offset;
+            const nextIndex =
+              shares > 0n
+                ? ceilDiv((targetIndexed + 1n) * scale, shares) - 1n
+                : index;
+            const indexedAfter =
+              shares > 0n ? (shares * nextIndex) / scale : 0n;
+            const nextOffset = target - indexedAfter;
+
+            expect(nextIndex).toBeGreaterThanOrEqual(index);
+            expect(nextOffset).toBeGreaterThanOrEqual(offset);
+            expect(indexedAfter + nextOffset).toBe(target);
+            if (shares > 0n) {
+              expect((shares * (nextIndex + 1n)) / scale).toBeGreaterThan(
+                targetIndexed,
+              );
+            }
+          }
+        }
+      }
+    }
+  });
+});
+
 describe("per-instance accounting properties", () => {
   it.each([
     { label: "tiny indivisible positions", amounts: [1, 1] },
