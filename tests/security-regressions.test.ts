@@ -4,6 +4,7 @@ import {
   BOND_INDEX,
   CALLBACK_MANAGER,
   MAX_SATS,
+  STX_VALUE_RATIO,
   TEST_CALLER,
   advanceToBurnHeight,
   bindBond,
@@ -212,6 +213,135 @@ describe("reward flooring and funded reserve", () => {
     expect(Number(rewardEpoch())).toBe(0);
     advanceToBurnHeight(boundary);
     expect(Number(rewardEpoch())).toBe(1);
+  });
+
+  it("banks an exited member's persisted predecessor tail before the next roll", () => {
+    stakeFirstBond([
+      [alice, 1],
+      [bob, 3],
+    ]);
+
+    const firstRoll = bindNextBond();
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(firstRoll.cutoff);
+    expect(stake().type).toBe("ok");
+
+    expect(settleMember(bob).type).toBe("ok");
+    expect(member(bob)).toMatchObject({
+      "settled-epoch": "1",
+      "tail-epoch": "0",
+      "tail-shares": "3",
+      "tail-index": "0",
+      pending: "0",
+    });
+    expect(claimPrincipal(bob, alice).type).toBe("ok");
+
+    expect(payRewards(carol, 4).type).toBe("ok");
+    expect(syncRewards(dave).type).toBe("ok");
+    expect(claimableRewards(bob)).toBe(3);
+    expect(member(bob).pending).toBe("0");
+
+    const secondRoll = bindNextBond(STX_VALUE_RATIO, MAX_SATS, 18);
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(secondRoll.cutoff);
+    expect(stake().type).toBe("ok");
+
+    expect(claimableRewards(bob)).toBe(3);
+    expect(member(bob).pending).toBe("0");
+    expect(settleMember(bob, alice).type).toBe("ok");
+    expect(member(bob)).toMatchObject({
+      "settled-epoch": "2",
+      "tail-epoch": "1",
+      "tail-shares": "0",
+      pending: "3",
+    });
+    expect(settleMember(bob, carol).type).toBe("ok");
+    expect(claimableRewards(bob)).toBe(3);
+    expect(claimRewards(bob, dave)).toBeOk(Cl.uint(3));
+  });
+
+  it("accrues old and newly created tails once when a carried member later exits", () => {
+    stakeFirstBond([
+      [alice, 1],
+      [bob, 3],
+    ]);
+
+    const firstRoll = bindNextBond();
+    expect(commitRollover(alice).type).toBe("ok");
+    expect(commitRollover(bob).type).toBe("ok");
+    advanceToBurnHeight(firstRoll.cutoff);
+    expect(stake().type).toBe("ok");
+
+    expect(settleMember(bob).type).toBe("ok");
+    expect(member(bob)).toMatchObject({
+      "settled-epoch": "1",
+      "tail-epoch": "0",
+      "tail-shares": "3",
+      shares: "3",
+      pending: "0",
+    });
+
+    expect(payRewards(carol, 4).type).toBe("ok");
+    expect(syncRewards(dave).type).toBe("ok");
+    advanceToBurnHeight(rewardEpochSettlementHeight());
+    expect(payRewards(carol, 8).type).toBe("ok");
+    expect(syncRewards(dave).type).toBe("ok");
+
+    const missed = bindNextBond(STX_VALUE_RATIO, MAX_SATS, 18);
+    advanceToBurnHeight(missed.start + 1);
+    const secondRoll = bindNextBond(STX_VALUE_RATIO, MAX_SATS, 24);
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(secondRoll.cutoff);
+    expect(stake().type).toBe("ok");
+
+    expect(settleMember(bob, alice).type).toBe("ok");
+    expect(member(bob)).toMatchObject({
+      "settled-epoch": "2",
+      "tail-epoch": "1",
+      "tail-shares": "3",
+      "tail-index": "2000000000000",
+      shares: "0",
+      pending: "9",
+    });
+    expect(settleMember(bob, carol).type).toBe("ok");
+    expect(claimableRewards(bob)).toBe(9);
+    expect(claimRewards(bob, dave)).toBeOk(Cl.uint(9));
+    expect(Number(poolTotals()["unclaimed-rewards"])).toBe(3);
+  });
+
+  it("does not reaccrue a predecessor tail claimed before the next roll", () => {
+    stakeFirstBond([
+      [alice, 1],
+      [bob, 3],
+    ]);
+
+    const firstRoll = bindNextBond();
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(firstRoll.cutoff);
+    expect(stake().type).toBe("ok");
+    expect(settleMember(bob).type).toBe("ok");
+
+    expect(payRewards(carol, 4).type).toBe("ok");
+    expect(syncRewards(dave).type).toBe("ok");
+    expect(claimRewards(bob, alice)).toBeOk(Cl.uint(3));
+    expect(member(bob)).toMatchObject({
+      "tail-epoch": "0",
+      "tail-index": "1000000000000",
+      pending: "0",
+    });
+
+    const secondRoll = bindNextBond(STX_VALUE_RATIO, MAX_SATS, 18);
+    expect(commitRollover(alice).type).toBe("ok");
+    advanceToBurnHeight(secondRoll.cutoff);
+    expect(stake().type).toBe("ok");
+    expect(settleMember(bob, carol).type).toBe("ok");
+    expect(member(bob).pending).toBe("0");
+    expect(claimRewards(bob, dave)).toBeErr(Cl.uint(114));
+    expect(poolTotals()).toMatchObject({
+      "total-credited": "4",
+      "total-paid": "3",
+      "unclaimed-rewards": "1",
+    });
   });
 });
 
