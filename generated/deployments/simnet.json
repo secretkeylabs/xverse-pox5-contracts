@@ -25,7 +25,7 @@
       "lane": 0,
       "contractName": "sbtc-bond-treasury-0",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-0.clar",
-      "artifactSha256": "408132f08c66c1a8823908a402d34ccae7788d07b2a6075f52a3ab293535897c",
+      "artifactSha256": "9310f0e7e627e646d3a83f14c50432541b5f26ff5dfa53773917c45ac91f1377",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -35,7 +35,7 @@
       "lane": 0,
       "contractName": "sbtc-bond-staker-0",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-0.clar",
-      "artifactSha256": "4267f646441f0154198d71264f30bf7b547edf9fc33284a5da5000611b312619",
+      "artifactSha256": "8f04c5a1dff5e1235cd962dc8c4e4b3d15cf81b14ee7c0534600133155cc3b54",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-0"
@@ -68,7 +68,7 @@
       "lane": 1,
       "contractName": "sbtc-bond-treasury-1",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-1.clar",
-      "artifactSha256": "27bfdb8072c4d1a78d1972e4d81ef130db40db24f79a6774f42dbf3a71565894",
+      "artifactSha256": "8a46660a950568d9295ca99a40bc1a0fd76827dc99118793b2406b98c30953d5",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -78,7 +78,7 @@
       "lane": 1,
       "contractName": "sbtc-bond-staker-1",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-1.clar",
-      "artifactSha256": "b76cfcfa3d4a534a1b96a70b2af20d4f0d0b59dfcb0d78ec226eb416f4b00a0a",
+      "artifactSha256": "0cc8bd1b1c056f2adab7ccdd906d6dce05974d0f929fdaceab7796c28142573c",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-1"
@@ -111,7 +111,7 @@
       "lane": 2,
       "contractName": "sbtc-bond-treasury-2",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-2.clar",
-      "artifactSha256": "f128fa9f35151234adb504ddee5a7539e599e18f2a641101c1a09776c6560d54",
+      "artifactSha256": "730ce44cde2c371095f068491cbf2c4186fae6cd4b52fc102532292765d16759",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -121,7 +121,7 @@
       "lane": 2,
       "contractName": "sbtc-bond-staker-2",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-2.clar",
-      "artifactSha256": "2cb35b5e77d875529511c14923c16cd5dfb28a19bcdaaccdaa55a95027a37f18",
+      "artifactSha256": "41863a9ad88401ea122ba933ebfa4eac74168fa85ae6d2920dd7c9db9470c06f",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-2"
@@ -154,7 +154,7 @@
       "lane": 3,
       "contractName": "sbtc-bond-treasury-3",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-3.clar",
-      "artifactSha256": "5361fd9d990b551418495ff3a63d1150cdec557836b6fd8491eb6861506201df",
+      "artifactSha256": "3141b61fd19e4af447b1e0dca5a6550cc0ee08014da48532843fa5045c54b273",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -164,7 +164,7 @@
       "lane": 3,
       "contractName": "sbtc-bond-staker-3",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-3.clar",
-      "artifactSha256": "36f2e871b7fe4120aa8d2d4045bb092bf9079c8bffcb2d59fc4b908403e09b19",
+      "artifactSha256": "32bd9289eaa35130c54123bdefa9866e8a04dd053dd462bfd59ebfbf4e20f0ec",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-3"
@@ -197,7 +197,7 @@
       "lane": 4,
       "contractName": "sbtc-bond-treasury-4",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-4.clar",
-      "artifactSha256": "1edd5929ce55649122df025322d644ccf447f7d64463377e1d654dda2b43a2db",
+      "artifactSha256": "afc863a98a5fcc6cc1d46315e1949c5925aa00c332519d47c29ba1f1995f5b72",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -207,7 +207,7 @@
       "lane": 4,
       "contractName": "sbtc-bond-staker-4",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-4.clar",
-      "artifactSha256": "30e736593957c2459f9b6b900e297d7ad080632fd6bd03f414dc356276f147d7",
+      "artifactSha256": "735249f09f557f3569715365a228bd3b4b39e89660584ad3331dadc8d82ea8df",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-4"
@@ -240,7 +240,7 @@
       "lane": 5,
       "contractName": "sbtc-bond-treasury-5",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-treasury-5.clar",
-      "artifactSha256": "d7555fc7ffac039441dbc29d2790bb6eac0d319fd45eac842d5e954cfc6d2f00",
+      "artifactSha256": "597372257a8fcd59c80f4a57568dbe5fa46a393dbb4e7c20ae2239e4eb45da00",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -250,7 +250,7 @@
       "lane": 5,
       "contractName": "sbtc-bond-staker-5",
       "artifactPath": "contracts/generated/simnet/sbtc-bond-staker-5.clar",
-      "artifactSha256": "78a1e6b1fed214ac90a0c426cf37f4217b98d40d9bd201cc6fe2d03d1589e335",
+      "artifactSha256": "bb1bc773ac858d97466389f9490cf976f974ba3669ff163fbb1f7b3513e80038",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
         "sbtc-bond-treasury-5"
