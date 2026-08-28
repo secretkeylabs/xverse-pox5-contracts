@@ -1746,12 +1746,10 @@
 ;;; Rewards
 
 ;; Recognise every unrecognized sBTC sat currently held by the pool against the
-;; oldest epoch still open. For a positive-share epoch, choose the greatest
-;; index whose aggregate indexed credit stays within the funded target, then
-;; put only an index-granularity remainder into the offset. This makes one
-;; explicit synchronization consume the complete snapshot surplus without
-;; ever over-crediting it. Independently floored member accrual can still leave
-;; funded recognized dust, which remains permanently inaccessible.
+;; oldest epoch still open. Advance distributable member weight through exactly
+;; one inherited floor delta. Any surplus the resulting aggregate index does
+;; not represent is funded into the credit offset and permanently locked rather
+;; than advancing across heterogeneous member checkpoint fractions.
 ;;
 ;; If every live share has left, no member owns a reward weight. A later bare
 ;; transfer is therefore recognized entirely into offset-backed terminal dust:
@@ -1762,23 +1760,25 @@
       (record (unwrap! (map-get? epochs epoch) ERR_UNKNOWN_EPOCH))
       (shares (get total-shares record))
       (surplus (get-unrecognized-rewards))
-      (target-credited (+ (get credited record) surplus))
-      (target-indexed (- target-credited (get credit-offset record)))
-      ;; Greatest index whose floor(shares * index / PRECISION) does not exceed
-      ;; target-indexed. The zero-share branch has no distributable index.
-      (next-index (if (> shares u0)
-        (- (ceil-div (* (+ target-indexed u1) PRECISION) shares) u1)
-        (get reward-index record)
-      ))
-      (indexed-after (if (> shares u0)
-        (/ (* shares next-index) PRECISION)
+      (delta (if (> shares u0)
+        (/ (* surplus PRECISION) shares)
         u0
       ))
-      (next-offset (- target-credited indexed-after))
-      (recognized (- target-credited (get credited record)))
+      (next-index (+ (get reward-index record) delta))
+      (indexed-credited (+
+        (if (> shares u0)
+          (/ (* shares next-index) PRECISION)
+          u0
+        )
+        (get credit-offset record)
+      ))
+      (indexed-recognized (- indexed-credited (get credited record)))
+      (locked-residual (- surplus indexed-recognized))
+      (next-offset (+ (get credit-offset record) locked-residual))
+      (target-credited (+ (get credited record) surplus))
     )
     (try! (assert-no-protocol-transition))
-    (asserts! (> recognized u0) ERR_NOTHING_TO_CLAIM)
+    (asserts! (> surplus u0) ERR_NOTHING_TO_CLAIM)
 
     (map-set epochs epoch
       (merge record {
@@ -1787,11 +1787,11 @@
         credit-offset: next-offset,
       })
     )
-    (var-set total-credited (+ (var-get total-credited) recognized))
+    (var-set total-credited (+ (var-get total-credited) surplus))
 
     (let ((result {
         epoch: epoch,
-        recognized: recognized,
+        recognized: surplus,
         reward-index: next-index,
       }))
       (print (merge { topic: "sync-rewards" } result))

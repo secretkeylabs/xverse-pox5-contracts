@@ -28,6 +28,7 @@ import {
   rewardEpoch,
   rewardEpochSettlementHeight,
   sbtcBalance,
+  settleMember,
   settledMember,
   stake,
   stakeFirstBond,
@@ -374,9 +375,12 @@ describe("member-initiated early sBTC withdrawal", () => {
     expect(claimableRewards(alice)).toBe(4);
   });
 
-  it.each([1, 2])(
-    "consumes a non-divisible %i-sat surplus in one sync before exact full exit",
-    (reward) => {
+  it.each([
+    { reward: 1, indexed: 0, locked: 1 },
+    { reward: 2, indexed: 1, locked: 1 },
+  ])(
+    "consumes a non-divisible $reward-sat surplus with $locked locked residual",
+    ({ reward, indexed, locked }) => {
       stakeFirstBond([[alice, 3]]);
       avoidPreparePhase();
       expect(payRewards(bob, reward).type).toBe("ok");
@@ -390,11 +394,15 @@ describe("member-initiated early sBTC withdrawal", () => {
         recognized: String(reward),
       });
       expect(unrecognizedRewards()).toBe(0);
+      expect(epoch(0)).toMatchObject({
+        credited: String(reward),
+        "credit-offset": String(locked),
+      });
       expect(earlyUnstakePreview(alice)["full-exit-requires-reward-sync"]).toBe(
         false,
       );
       expect(unstakeEarly(alice, 3).type).toBe("ok");
-      expect(claimableRewards(alice)).toBe(reward);
+      expect(claimableRewards(alice)).toBe(indexed);
     },
   );
 
@@ -408,7 +416,60 @@ describe("member-initiated early sBTC withdrawal", () => {
     expect(unstakeEarly(alice, 3)).toBeErr(Cl.uint(135));
     expect(syncRewards(bob).type).toBe("ok");
     expect(unstakeEarly(alice, 3).type).toBe("ok");
-    expect(claimableRewards(alice)).toBe(2);
+    expect(claimableRewards(alice)).toBe(1);
+    expect(poolTotals()["unclaimed-rewards"]).toBe("2");
+  });
+
+  it("keeps heterogeneous checkpoint claims within credited reserve", () => {
+    stakeFirstBond([
+      [alice, 1],
+      [bob, 2],
+    ]);
+    avoidPreparePhase();
+
+    expect(payRewards(carol, 1).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(payRewards(carol, 3).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(unstakeEarly(bob, 1).type).toBe("ok");
+    expect(payRewards(carol, 1).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(unstakeEarly(alice, 1).type).toBe("ok");
+    expect(payRewards(carol, 1).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(settleMember(alice).type).toBe("ok");
+    expect(settleMember(bob).type).toBe("ok");
+
+    expect(poolTotals()["total-credited"]).toBe("6");
+    expect(claimableRewards(alice)).toBe(1);
+    expect(claimableRewards(bob)).toBe(3);
+    expect(claimableRewards(alice) + claimableRewards(bob)).toBe(4);
+  });
+
+  it("keeps a second share-removal checkpoint sequence solvent", () => {
+    stakeFirstBond([
+      [alice, 2],
+      [bob, 5],
+    ]);
+    avoidPreparePhase();
+
+    for (const reward of [1, 2]) {
+      expect(payRewards(carol, reward).type).toBe("ok");
+      expect(syncRewards(carol).type).toBe("ok");
+    }
+    expect(unstakeEarly(alice, 1).type).toBe("ok");
+    expect(payRewards(carol, 1).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(unstakeEarly(bob, 1).type).toBe("ok");
+    expect(payRewards(carol, 3).type).toBe("ok");
+    expect(syncRewards(carol).type).toBe("ok");
+    expect(settleMember(alice).type).toBe("ok");
+    expect(settleMember(bob).type).toBe("ok");
+
+    const credited = value(poolTotals(), "total-credited");
+    const claims = claimableRewards(alice) + claimableRewards(bob);
+    expect(credited).toBe(7);
+    expect(claims).toBeLessThanOrEqual(credited);
   });
 
   it("recognizes a post-zero-share transfer only as locked terminal dust", () => {

@@ -101,11 +101,11 @@ earning-epoch tag.
 
 ### Whole-satoshi flooring and terminal dust
 
-Synchronization chooses the greatest aggregate reward index that does not
-exceed its complete funded target and puts any index-unrepresentable remainder
-in `credit-offset`. Each member settlement still floors independently and
-advances its checkpoint. Repeated synchronization/settlement can permanently
-lock recognized sats.
+Synchronization advances the aggregate reward index through exactly one floor
+delta and puts every remaining funded surplus sat in `credit-offset`. The
+residual does not advance member reward weight. Each member settlement still
+floors independently and advances its checkpoint. Repeated
+synchronization/settlement can permanently lock recognized sats.
 
 If the selected epoch has zero shares, `sync-rewards` recognizes a later bare
 sBTC transfer entirely into offset-backed terminal dust. No member owns a

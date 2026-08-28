@@ -90,11 +90,8 @@ function assertAccounting(memberPrincipals: string[]) {
 }
 
 describe("complete-surplus reward arithmetic", () => {
-  it("maximizes the funded index and preserves exact credit across granularity", () => {
+  it("advances one floor delta and locks only the funded residual", () => {
     const scale = 100n;
-    const ceilDiv = (numerator: bigint, denominator: bigint) =>
-      (numerator + denominator - 1n) / denominator;
-
     const shareCases = [
       0n,
       1n,
@@ -117,24 +114,23 @@ describe("complete-surplus reward arithmetic", () => {
         for (let offset = 0n; offset <= 12n; offset += 3n) {
           const credited = (shares * index) / scale + offset;
           for (let surplus = 1n; surplus <= 12n; surplus += 1n) {
+            const delta = shares > 0n ? (surplus * scale) / shares : 0n;
+            const nextIndex = index + delta;
+            const indexedCredited =
+              (shares > 0n ? (shares * nextIndex) / scale : 0n) +
+              offset;
+            const indexedRecognized = indexedCredited - credited;
+            const lockedResidual = surplus - indexedRecognized;
+            const nextOffset = offset + lockedResidual;
             const target = credited + surplus;
-            const targetIndexed = target - offset;
-            const nextIndex =
-              shares > 0n
-                ? ceilDiv((targetIndexed + 1n) * scale, shares) - 1n
-                : index;
-            const indexedAfter =
-              shares > 0n ? (shares * nextIndex) / scale : 0n;
-            const nextOffset = target - indexedAfter;
 
+            expect(indexedRecognized).toBeLessThanOrEqual(surplus);
             expect(nextIndex).toBeGreaterThanOrEqual(index);
             expect(nextOffset).toBeGreaterThanOrEqual(offset);
-            expect(indexedAfter + nextOffset).toBe(target);
-            if (shares > 0n) {
-              expect((shares * (nextIndex + 1n)) / scale).toBeGreaterThan(
-                targetIndexed,
-              );
-            }
+            expect(
+              (shares > 0n ? (shares * nextIndex) / scale : 0n) +
+                nextOffset,
+            ).toBe(target);
           }
         }
       }

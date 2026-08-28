@@ -185,11 +185,11 @@ credited = floor(totalShares * rewardIndex / 1e12) + creditOffset
 ```
 
 Removing shares rebases only the offset, leaving cumulative epoch/global credit
-and every settled member reward unchanged. Later synchronization sets a
-cumulative funded target, selects the greatest reward index whose aggregate
-indexed credit does not exceed that target, and places only any
-index-unrepresentable remainder into the offset. The complete current surplus
-is therefore recognized in one successful call without over-crediting it.
+and every settled member reward unchanged. Later synchronization advances the
+reward index through exactly one floor delta, then places every funded surplus
+sat not represented by that aggregate index into the offset as permanently
+locked residual. The complete current surplus is recognized in one successful
+call without advancing across heterogeneous member checkpoint fractions.
 
 Xverse must run a keeper that completes the prior bond's final signer-manager
 payout and `sync-rewards` before that half-cycle boundary; members and other
