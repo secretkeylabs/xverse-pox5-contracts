@@ -26,9 +26,12 @@ wind-down.
 
 The deployer initializes once. Keyed operators may bind a configured PoX-5 bond,
 rotate the operator set, maintain the trusted signer-code-hash set, update a live
-registration to a manager whose notice has matured, and sweep only treasury
+registration to a manager whose epoch-count eligibility has matured, and sweep only treasury
 sBTC above accounted principal. Operators cannot select claim recipients for
-member principal or rewards.
+member principal or rewards. The enabled operator set can be rotated but cannot
+become empty: an operator cannot disable its own entry, so at least one
+principal permanently retains operator authority. This lack of on-chain
+renunciation is intentional and accepted.
 
 Staking, wind-down, synchronization, settlement, and pay-to-member claims are
 permissionless. Early withdrawal is self-service under effective `tx-sender`;
@@ -56,6 +59,19 @@ principal; Bitcoin and sBTC signer multisig are unrelated to this identity.
 A failing external call rolls the complete Clarity transaction back.
 
 ## Accepted residual risks
+
+### Same-height signer-manager eligibility
+
+Trusted signer-manager maturity is measured only by `epoch-count`. An operator
+may add a manager code hash immediately before a successful `stake`; the stake
+increments the count, and a subsequent `update-bond-registration` can adopt
+that manager at the same burn height. The contract does not guarantee an
+intervening block or member reaction window. This is accepted: members and
+deployment operations must treat a continuing enabled operator as able to move
+a rolled position to any then-eligible, PoX-5-registered manager. The selected
+manager can affect reward delivery and transition liveness, but the staker's
+transition guard, PoX-5 custody, and treasury authorization continue to protect
+accounted principal.
 
 ### Signer-manager callbacks
 

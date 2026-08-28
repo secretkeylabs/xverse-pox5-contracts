@@ -223,6 +223,25 @@ claims without affecting principal solvency. This behavior is intentional; the
 pool has no fractional carry, redistribution, claim expiry, finalization payout,
 or reward sweep.
 
+## Operator and signer-manager authority
+
+The operator set intentionally always retains at least one enabled principal.
+An enabled operator cannot disable its own entry; another operator may replace
+it, but there is no on-chain operator-renunciation or authority-freeze path.
+This permanent operator continuity is accepted. Operator powers remain limited
+to binding, operator and vetted-manager administration, live registration
+updates, and sweeping only unaccounted treasury surplus; they cannot redirect
+accounted member principal or rewards.
+
+Trusted signer-manager maturity is based on the pool's epoch count, not a
+minimum number of burn blocks. An operator can trust a code hash immediately
+before `stake`; that successful stake increments the epoch count and can make
+the hash eligible for `update-bond-registration` at the same burn height. This
+same-height adoption scenario and the absence of a guaranteed member reaction
+window are accepted parts of the operator trust model. Deployment and runtime
+operations must therefore treat an enabled operator as able to select any
+PoX-5-registered manager whose code hash is eligible after the roll.
+
 ## Signer callback safety
 
 PoX-5 invokes the configured signer manager while a stake or rollover is still
