@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SIGNER_MANAGERS,
   LANES,
+  MAINNET_DEPLOYER_ADDRESS,
+  assertMainnetDeployerAddress,
   parseFeeUstx,
   resolveOperators,
 } from "../scripts/deploy";
@@ -9,6 +11,17 @@ import {
 const operator = "SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE";
 
 describe("deployment script inputs", () => {
+  it("pins deployment to the canonical Xverse PoX-5 address", () => {
+    expect(() =>
+      assertMainnetDeployerAddress(MAINNET_DEPLOYER_ADDRESS),
+    ).not.toThrow();
+    expect(() =>
+      assertMainnetDeployerAddress(
+        "SPXVRSEH2BKSXAEJ00F1BY562P45D5ERPSKR4Q33",
+      ),
+    ).toThrow(/expected canonical Xverse PoX-5 deployer/);
+  });
+
   it("assigns --op-all to every lane", () => {
     const operators = resolveOperators({ "op-all": operator });
 
