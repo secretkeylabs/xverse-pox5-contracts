@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 
 export const CANONICAL_REVISION =
   "be2d8502bba23c65e910655da261429df91ecdd4";
+export const CONTRACT_VERSION = "v1" as const;
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
 export const SIGNER_MANAGER_INPUTS = [
   "signerManagerPrincipal1",
@@ -124,12 +125,12 @@ export function validateNetworkSet(networks: readonly string[]) {
 function assertCanonicalSources(staker: string, treasury: string) {
   const requiredStakerTokens = [
     "(define-constant LANE_ID u0)",
-    ".sbtc-bond-treasury-0",
+    ".sbtc-bond-treasury-v1-0",
     SOURCE_NETWORK.sbtcPrincipal,
     SOURCE_NETWORK.pox5Principal,
   ];
   const requiredTreasuryTokens = [
-    "(define-constant CONTROLLER .sbtc-bond-staker-0)",
+    "(define-constant CONTROLLER .sbtc-bond-staker-v1-0)",
     SOURCE_NETWORK.sbtcPrincipal,
   ];
 
@@ -159,7 +160,7 @@ function assertNoUnresolvedPlaceholders(content: string, label: string) {
 }
 
 function artifactName(kind: ContractKind, lane: number) {
-  return `sbtc-bond-${kind}-${lane}`;
+  return `sbtc-bond-${kind}-${CONTRACT_VERSION}-${lane}`;
 }
 
 function generatedHeader(
@@ -205,13 +206,13 @@ function renderContract(
       `(define-constant LANE_ID u${lane})`,
     );
     output = output.replaceAll(
-      ".sbtc-bond-treasury-0",
-      `.sbtc-bond-treasury-${lane}`,
+      ".sbtc-bond-treasury-v1-0",
+      `.sbtc-bond-treasury-v1-${lane}`,
     );
   } else {
     output = output.replaceAll(
-      ".sbtc-bond-staker-0",
-      `.sbtc-bond-staker-${lane}`,
+      ".sbtc-bond-staker-v1-0",
+      `.sbtc-bond-staker-v1-${lane}`,
     );
   }
 
@@ -226,6 +227,9 @@ export function validateGeneratedArtifact(
 ) {
   const expected = NETWORKS[record.network];
   assertNoUnresolvedPlaceholders(content, record.relativePath);
+  if (/\bsbtc-bond-(?:staker|treasury)-[0-5]\b/.test(content)) {
+    throw new Error(`${record.relativePath} contains an unversioned contract name`);
+  }
 
   if (!content.includes(expected.sbtcPrincipal)) {
     throw new Error(`${record.relativePath} is missing its ${record.network} sBTC principal`);
@@ -255,7 +259,7 @@ export function validateGeneratedArtifact(
       throw new Error(`${record.relativePath} does not declare lane ${record.lane} exactly once`);
     }
     const treasuryReferences = [
-      ...content.matchAll(/\.sbtc-bond-treasury-(\d+)/g),
+      ...content.matchAll(/\.sbtc-bond-treasury-v1-(\d+)/g),
     ];
     if (treasuryReferences.length === 0) {
       throw new Error(`${record.relativePath} has no treasury reference`);
@@ -265,7 +269,7 @@ export function validateGeneratedArtifact(
     }
   } else {
     const controllerReferences = [
-      ...content.matchAll(/\.sbtc-bond-staker-(\d+)/g),
+      ...content.matchAll(/\.sbtc-bond-staker-v1-(\d+)/g),
     ];
     if (controllerReferences.length === 0) {
       throw new Error(`${record.relativePath} has no staker controller reference`);
@@ -274,7 +278,7 @@ export function validateGeneratedArtifact(
       throw new Error(`${record.relativePath} contains a cross-lane staker controller`);
     }
     if (!content.includes(
-      `(define-constant CONTROLLER .sbtc-bond-staker-${record.lane})`,
+      `(define-constant CONTROLLER .sbtc-bond-staker-v1-${record.lane})`,
     )) {
       throw new Error(`${record.relativePath} does not authorize its same-lane staker`);
     }
@@ -397,7 +401,7 @@ function renderDeploymentInput(
         poolOperatorPrincipal: "initial keyed operator principal",
       },
       stakerPrincipalForms: LANES.map(
-        (lane) => `<Xverse>.sbtc-bond-staker-${lane}`,
+        (lane) => `<Xverse>.sbtc-bond-staker-v1-${lane}`,
       ),
       operations,
       allowlistNote:
@@ -629,15 +633,15 @@ function validateSimnetPlan(root: string, artifacts: readonly ArtifactRecord[]) 
   }
 
   const generatedNames = [
-    ...plan.matchAll(/contract-name: (sbtc-bond-(?:treasury|staker)-\d+)/g),
+    ...plan.matchAll(/contract-name: (sbtc-bond-(?:treasury|staker)-v1-\d+)/g),
   ].map((match) => match[1]);
   if (generatedNames.length !== 12 || new Set(generatedNames).size !== 12) {
     errors.push(`${SIMNET_PLAN_PATH} must contain exactly 12 unique lane contracts`);
   }
 
   for (const lane of LANES) {
-    const treasuryIndex = plan.indexOf(`contract-name: sbtc-bond-treasury-${lane}`);
-    const stakerIndex = plan.indexOf(`contract-name: sbtc-bond-staker-${lane}`);
+    const treasuryIndex = plan.indexOf(`contract-name: sbtc-bond-treasury-v1-${lane}`);
+    const stakerIndex = plan.indexOf(`contract-name: sbtc-bond-staker-v1-${lane}`);
     if (treasuryIndex < 0 || stakerIndex < 0 || treasuryIndex > stakerIndex) {
       errors.push(
         `${SIMNET_PLAN_PATH} must publish lane ${lane} treasury before staker`,
@@ -651,6 +655,7 @@ export function writeGenerated(root = ROOT) {
   const suite = expectedSuite(root);
   rmSync(join(root, GENERATED_CONTRACTS_DIR), { recursive: true, force: true });
   rmSync(join(root, GENERATED_METADATA_DIR), { recursive: true, force: true });
+  rmSync(join(root, SIMNET_PLAN_PATH), { force: true });
   for (const [path, content] of suite.files) {
     const absolute = join(root, path);
     mkdirSync(dirname(absolute), { recursive: true });

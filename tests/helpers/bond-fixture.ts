@@ -10,8 +10,8 @@ import {
 export const POX5 = "ST000000000000000000002AMW42H.pox-5";
 export const SBTC_DEPLOYER = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4";
 export const SBTC = `${SBTC_DEPLOYER}.sbtc-token`;
-export const POOL = "sbtc-bond-staker-0";
-export const TREASURY = "sbtc-bond-treasury-0";
+export const POOL = "sbtc-bond-staker-v1-0";
+export const TREASURY = "sbtc-bond-treasury-v1-0";
 export const MANAGER = "test-signer-manager";
 export const ALT_MANAGER = "test-signer-manager-alt";
 export const CALLBACK_MANAGER = "test-signer-manager-callback";

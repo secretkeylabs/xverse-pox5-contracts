@@ -51,7 +51,7 @@
       (target (var-get callback-target))
     )
     (if (is-eq mode u1)
-      (let ((sync-error (match (contract-call? .sbtc-bond-staker-0 sync-rewards)
+      (let ((sync-error (match (contract-call? .sbtc-bond-staker-v1-0 sync-rewards)
           result u0
           error error
         )))
@@ -62,39 +62,39 @@
       )
       (if (is-eq mode u2)
         (begin
-          (try! (contract-call? .sbtc-bond-staker-0 sync-rewards))
+          (try! (contract-call? .sbtc-bond-staker-v1-0 sync-rewards))
           (ok true)
         )
         (if (is-eq mode u3)
           ERR_VALIDATION_REJECTED
           (if (is-eq mode u4)
             (let (
-                (sync-error (match (contract-call? .sbtc-bond-staker-0 sync-rewards)
+                (sync-error (match (contract-call? .sbtc-bond-staker-v1-0 sync-rewards)
                   result u0
                   error error
                 ))
-                (claim-rewards-error (match (contract-call? .sbtc-bond-staker-0 claim-rewards target)
+                (claim-rewards-error (match (contract-call? .sbtc-bond-staker-v1-0 claim-rewards target)
                   result u0
                   error error
                 ))
-                (claim-principal-error (match (contract-call? .sbtc-bond-staker-0 claim-principal target)
+                (claim-principal-error (match (contract-call? .sbtc-bond-staker-v1-0 claim-principal target)
                   result u0
                   error error
                 ))
-                (settle-member-error (match (contract-call? .sbtc-bond-staker-0 settle-member target)
+                (settle-member-error (match (contract-call? .sbtc-bond-staker-v1-0 settle-member target)
                   result u0
                   error error
                 ))
                 ;; A different protocol mutator can be called in the same
                 ;; nested stack; it must return the transition error before
                 ;; checking its signer or unlock height.
-                (nested-unstake-error (match (contract-call? .sbtc-bond-staker-0 unstake-sbtc
+                (nested-unstake-error (match (contract-call? .sbtc-bond-staker-v1-0 unstake-sbtc
                   .test-signer-manager
                 )
                   result u0
                   error error
                 ))
-                (nested-early-unstake-error (match (contract-call? .sbtc-bond-staker-0 unstake-sbtc-early
+                (nested-early-unstake-error (match (contract-call? .sbtc-bond-staker-v1-0 unstake-sbtc-early
                   .test-signer-manager u1
                 )
                   result u0
