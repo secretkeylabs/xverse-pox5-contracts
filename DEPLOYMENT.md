@@ -1,7 +1,7 @@
 # Six-lane deployment inputs
 
 The deterministic generator creates non-broadcast deployment inputs from
-canonical revision `be2d8502bba23c65e910655da261429df91ecdd4`.
+canonical revision `fa91d19053202b262d792485d4e13db179672eaa`.
 
 ## Exact contract and principal forms
 

@@ -12,7 +12,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const CANONICAL_REVISION =
-  "be2d8502bba23c65e910655da261429df91ecdd4";
+  "fa91d19053202b262d792485d4e13db179672eaa";
 export const CONTRACT_VERSION = "v1" as const;
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
 export const SIGNER_MANAGER_INPUTS = [
