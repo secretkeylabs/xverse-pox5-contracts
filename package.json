@@ -6,6 +6,7 @@
   "private": true,
   "packageManager": "bun@1.4.0",
   "scripts": {
+    "deploy": "bun scripts/deploy.ts",
     "generate": "bun scripts/generate.ts && clarinet deployments generate --simnet",
     "check:generated": "bun scripts/generate.ts --check",
     "check": "clarinet check && bun run check:types",
@@ -22,6 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@inquirer/prompts": "^8.7.0",
     "@stacks/clarinet-sdk": "^3.9.0",
     "@stacks/transactions": "^7.2.0",
     "@types/node": "^24.4.0",

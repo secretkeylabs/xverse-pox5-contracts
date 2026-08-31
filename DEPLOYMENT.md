@@ -93,6 +93,56 @@ After publication and initialization, PoX-5 bond setup must separately create
 the matching allowlist entries before an operator can bind a bond. Contract
 generation cannot create or alter those entries.
 
+## Mainnet deployment script
+
+The Bun deployment script verifies the generated artifact hashes, the three
+signer-manager source hashes and PoX-5 registrations, the deployer nonce, and
+the deployer's STX balance. It then signs twelve contract publications and six
+`initialize` calls in the generated order:
+
+```bash
+# Securely prompt for "Deployer private key", then ask before broadcasting.
+bun run deploy -- --op-all SP...OPERATOR
+
+# Supply the key non-interactively and broadcast without the confirmation menu.
+bun run deploy -- \
+  --deployer-private-key "$DEPLOYER_PRIVATE_KEY" \
+  --op-0 SP...OPERATOR0 \
+  --op-1 SP...OPERATOR1 \
+  --op-2 SP...OPERATOR2 \
+  --op-3 SP...OPERATOR3 \
+  --op-4 SP...OPERATOR4 \
+  --op-5 SP...OPERATOR5 \
+  --broadcast
+```
+
+The mainnet defaults are:
+
+- `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.xverse-signer-manager-1`
+  for lanes 0 and 3;
+- `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.xverse-signer-manager-2`
+  for lanes 1 and 4; and
+- `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.xverse-signer-manager-3`
+  for lanes 2 and 5.
+
+Override them with `--signer-manager-1`, `--signer-manager-2`, and
+`--signer-manager-3`. Every selected manager must have the reviewed mainnet
+source hash and already be registered with PoX-5. `--fee-ustx` sets one explicit
+fee, in micro-STX, on each transaction; otherwise the script requests the
+network's medium estimate and falls back to its transfer fee rate.
+
+Before any broadcast choice, all signed raw transactions are written with mode
+`0600` to the git-ignored path
+`deployment-transactions/deployment-<UNIX-TIMESTAMP-SECONDS>/transactions.json`.
+Anyone with that file can broadcast its transactions. Supplying the private key
+on the command line may also expose it in shell history and process listings;
+omit the option to use the masked prompt.
+
+The script broadcasts in order and records each node response, but does not
+wait for confirmation, retry, resume, skip existing deployments, or alter
+nonces after signing. Handle partial execution manually. PoX-5 bond allowlisting
+remains a separate operation.
+
 ## Pre-deployment verification
 
 From a clean checkout of the pinned revision:
@@ -106,6 +156,6 @@ bun run check:format
 git diff --exit-code -- contracts Clarinet.toml generated deployments/default.simnet-plan.yaml
 ```
 
-Production deployment and allowlist transactions are explicitly outside this
-repository task. Never run `clarinet deployments apply` merely to validate these
-inputs.
+Do not run `clarinet deployments apply` merely to validate these inputs. Use the
+Bun script only after reviewing its printed mainnet principals, operators,
+nonces, and fees; allowlist transactions remain outside the script.

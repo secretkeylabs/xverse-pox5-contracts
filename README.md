@@ -39,8 +39,8 @@ staker principals are:
 Every lane has a dedicated `sbtc-bond-treasury-X`, references only that sibling,
 and accepts only bond indexes where `index mod 6 = X`. See
 [DEPLOYMENT.md](DEPLOYMENT.md) for exact principal forms, network protocol
-principals, non-broadcast deployment inputs, ordering, and PoX-5 allowlist
-requirements.
+principals, generated deployment inputs, the Bun mainnet deployment script,
+ordering, and PoX-5 allowlist requirements.
 
 ## Accounting model
 

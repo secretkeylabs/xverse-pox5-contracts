@@ -1,6 +1,7 @@
 **/settings/Mainnet.toml
 **/settings/Testnet.toml
 .cache/**
+deployment-transactions/
 history.txt
 
 logs

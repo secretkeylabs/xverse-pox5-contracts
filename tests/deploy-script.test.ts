@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import {
+  DEFAULT_SIGNER_MANAGERS,
+  LANES,
+  parseFeeUstx,
+  resolveOperators,
+} from "../scripts/deploy";
+
+const operator = "SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE";
+
+describe("deployment script inputs", () => {
+  it("assigns --op-all to every lane", () => {
+    const operators = resolveOperators({ "op-all": operator });
+
+    expect(LANES.map((lane) => operators[lane])).toEqual(
+      LANES.map(() => operator),
+    );
+  });
+
+  it("accepts a complete set of per-lane operators", () => {
+    const values = Object.fromEntries(
+      LANES.map((lane) => [
+        `op-${lane}`,
+        DEFAULT_SIGNER_MANAGERS[lane % DEFAULT_SIGNER_MANAGERS.length],
+      ]),
+    );
+    const operators = resolveOperators(values);
+
+    expect(LANES.map((lane) => operators[lane])).toEqual(
+      LANES.map(
+        (lane) => DEFAULT_SIGNER_MANAGERS[lane % DEFAULT_SIGNER_MANAGERS.length],
+      ),
+    );
+  });
+
+  it("rejects mixed operator modes", () => {
+    expect(() =>
+      resolveOperators({ "op-all": operator, "op-0": operator }),
+    ).toThrow(/either --op-all/);
+  });
+
+  it("rejects incomplete per-lane operators", () => {
+    expect(() => resolveOperators({ "op-0": operator })).toThrow(
+      /Missing: --op-1, --op-2, --op-3, --op-4, --op-5/,
+    );
+  });
+
+  it("parses a positive per-transaction fee", () => {
+    expect(parseFeeUstx("12345")).toBe(12345n);
+    expect(parseFeeUstx(undefined)).toBeUndefined();
+    expect(() => parseFeeUstx("0")).toThrow(/greater than zero/);
+    expect(() => parseFeeUstx("1.5")).toThrow(/positive integer/);
+  });
+});
