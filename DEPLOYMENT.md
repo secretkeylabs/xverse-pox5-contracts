@@ -5,20 +5,25 @@ canonical revision `be2d8502bba23c65e910655da261429df91ecdd4`.
 
 ## Exact contract and principal forms
 
-One Xverse-controlled Stacks standard principal publishes twelve contracts:
+One Xverse-controlled Stacks standard principal publishes twelve contracts. On
+mainnet, the canonical publisher is
+`SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE`:
 
-| Lane | Treasury contract | Staker contract | PoX-5 allowlist principal |
+| Lane | Treasury contract | Staker contract | Mainnet PoX-5 allowlist principal |
 |---:|---|---|---|
-| 0 | `sbtc-bond-treasury-0` | `sbtc-bond-staker-0` | `<Xverse>.sbtc-bond-staker-0` |
-| 1 | `sbtc-bond-treasury-1` | `sbtc-bond-staker-1` | `<Xverse>.sbtc-bond-staker-1` |
-| 2 | `sbtc-bond-treasury-2` | `sbtc-bond-staker-2` | `<Xverse>.sbtc-bond-staker-2` |
-| 3 | `sbtc-bond-treasury-3` | `sbtc-bond-staker-3` | `<Xverse>.sbtc-bond-staker-3` |
-| 4 | `sbtc-bond-treasury-4` | `sbtc-bond-staker-4` | `<Xverse>.sbtc-bond-staker-4` |
-| 5 | `sbtc-bond-treasury-5` | `sbtc-bond-staker-5` | `<Xverse>.sbtc-bond-staker-5` |
+| 0 | `sbtc-bond-treasury-0` | `sbtc-bond-staker-0` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-0` |
+| 1 | `sbtc-bond-treasury-1` | `sbtc-bond-staker-1` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-1` |
+| 2 | `sbtc-bond-treasury-2` | `sbtc-bond-staker-2` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-2` |
+| 3 | `sbtc-bond-treasury-3` | `sbtc-bond-staker-3` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-3` |
+| 4 | `sbtc-bond-treasury-4` | `sbtc-bond-staker-4` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-4` |
+| 5 | `sbtc-bond-treasury-5` | `sbtc-bond-staker-5` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-5` |
 
-`<Xverse>` means the actual standard principal that publishes the contracts; it
-is not a second contract or a generator input. Deployment signing credentials
-are intentionally absent from this repository.
+`<Xverse>` in network-neutral generated metadata means the actual standard
+principal that publishes the contracts; for mainnet it resolves to the address
+above. It is not a second contract or a generator input. Deployment signing
+credentials are intentionally absent from this repository. The retired PoX-4
+pool address is not an input to this deployment and is not referenced by the
+PoX-5 artifacts.
 
 Each lane accepts only bond indexes congruent to its lane ID modulo six. Bond
 setup must allowlist the exact matching staker principal and lane-specific sats
@@ -97,8 +102,10 @@ generation cannot create or alter those entries.
 
 The Bun deployment script verifies the generated artifact hashes, the three
 signer-manager source hashes and PoX-5 registrations, the deployer nonce, and
-the deployer's STX balance. It then signs twelve contract publications and six
-`initialize` calls in the generated order:
+the deployer's STX balance. It refuses a private key that does not derive the
+canonical mainnet publisher
+`SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE`, then signs twelve contract
+publications and six `initialize` calls in the generated order:
 
 ```bash
 # Securely prompt for "Deployer private key", then ask before broadcasting.

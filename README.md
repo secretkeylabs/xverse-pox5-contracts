@@ -25,16 +25,20 @@ or protocol-principal output. Canonical source and artifact hashes are recorded
 in `generated/artifact-manifest.json`.
 
 The deployed contract names are externally significant. The six isolated
-staker principals are:
+mainnet staker principals are:
 
 ```text
-<Xverse>.sbtc-bond-staker-0
-<Xverse>.sbtc-bond-staker-1
-<Xverse>.sbtc-bond-staker-2
-<Xverse>.sbtc-bond-staker-3
-<Xverse>.sbtc-bond-staker-4
-<Xverse>.sbtc-bond-staker-5
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-0
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-1
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-2
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-3
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-4
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-5
 ```
+
+The publisher also hosts the three reviewed `xverse-signer-manager-X`
+contracts. Reusing that standard principal with unique contract names is valid;
+the retired PoX-4 pool address has no role in this suite.
 
 Every lane has a dedicated `sbtc-bond-treasury-X`, references only that sibling,
 and accepts only bond indexes where `index mod 6 = X`. See

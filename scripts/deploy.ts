@@ -30,6 +30,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const NETWORK = "mainnet" as const;
 const DEFAULT_API_URL = "https://api.hiro.so";
 const POX5_CONTRACT = "SP000000000000000000002Q6VF78.pox-5";
+export const MAINNET_DEPLOYER_ADDRESS =
+  "SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE";
 const EXPECTED_SIGNER_MANAGER_SOURCE_SHA256 =
   "c0a2cc8e83de2b1bc60e07c5e0f5da8991c6f79eb05d077bba8cb984eee226b3";
 
@@ -148,7 +150,8 @@ Usage:
   bun run deploy -- --op-0 <principal> ... --op-5 <principal> [options]
 
 Options:
-  --deployer-private-key <hex>  Deployer key. Prompts securely when omitted.
+  --deployer-private-key <hex>  Deployer key. Must derive ${MAINNET_DEPLOYER_ADDRESS}.
+                                Prompts securely when omitted.
   --op-all <principal>          Use one initial operator for all six lanes.
   --op-0 ... --op-5 <principal>
                                 Set every lane's initial operator separately.
@@ -201,6 +204,14 @@ function validatePrivateKey(value: string): string {
     fail("Deployer private key is not a valid secp256k1 private key.");
   }
   return key;
+}
+
+export function assertMainnetDeployerAddress(address: string): void {
+  if (address !== MAINNET_DEPLOYER_ADDRESS) {
+    fail(
+      `Deployer key derives ${address}; expected canonical Xverse PoX-5 deployer ${MAINNET_DEPLOYER_ADDRESS}.`,
+    );
+  }
 }
 
 function validateMainnetPrincipal(value: string, label: string): string {
@@ -775,6 +786,7 @@ export async function main(): Promise<void> {
   }
   const privateKey = validatePrivateKey(privateKeyInput);
   const deployerAddress = getAddressFromPrivateKey(privateKey, NETWORK);
+  assertMainnetDeployerAddress(deployerAddress);
   const apiFetch = createApiFetch();
 
   const { operations, sources } = loadAndVerifyOperations();
