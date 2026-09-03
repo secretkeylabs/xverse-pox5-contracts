@@ -16,6 +16,7 @@ import {
   ClarityVersion,
   PostConditionMode,
   broadcastTransaction,
+  deserializeTransaction,
   fetchCallReadOnlyFunction,
   fetchFeeEstimate,
   fetchNonce,
@@ -36,6 +37,8 @@ const EXPECTED_SIGNER_MANAGER_SOURCE_SHA256 =
   "c0a2cc8e83de2b1bc60e07c5e0f5da8991c6f79eb05d077bba8cb984eee226b3";
 const MAX_BROADCAST_RESPONSE_BODY_CHARS = 16_384;
 const MAX_CONSOLE_RESPONSE_BODY_CHARS = 2_000;
+const CONFIRMATION_POLL_INTERVAL_MS = 5_000;
+const CONFIRMATION_TIMEOUT_MS = 30 * 60 * 1_000;
 
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
 export type Lane = (typeof LANES)[number];
@@ -81,7 +84,8 @@ interface ArtifactManifest {
   }>;
 }
 
-interface CliOptions {
+interface DeployCliOptions {
+  mode: "deploy";
   deployerPrivateKey?: string;
   broadcast: boolean;
   feeUstx?: bigint;
@@ -89,6 +93,15 @@ interface CliOptions {
   operators: Record<Lane, string>;
   signerManagers: [string, string, string];
 }
+
+interface ResumeCliOptions {
+  mode: "resume";
+  resumePath: string;
+  broadcast: boolean;
+  apiUrl?: string;
+}
+
+type CliOptions = DeployCliOptions | ResumeCliOptions;
 
 interface PreparedTransactionRecord {
   order: number;
@@ -103,7 +116,7 @@ interface PreparedTransactionRecord {
   txid: string;
   rawTransaction: string;
   broadcast: {
-    status: "not-attempted" | "accepted" | "rejected" | "failed";
+    status: "not-attempted" | "accepted" | "confirmed" | "rejected" | "failed";
     response?: unknown;
   };
 }
@@ -131,6 +144,18 @@ interface ErrorDetails {
   stack?: string;
   cause?: ErrorDetails;
 }
+
+interface TransactionStatusDetails {
+  txid: string;
+  status: string;
+  blockHeight?: number;
+  blockHash?: string;
+  canonical?: boolean;
+}
+
+type TransactionStatus =
+  | { state: "unknown" }
+  | { state: "known"; details: TransactionStatusDetails };
 
 interface SavedDeployment {
   schemaVersion: 1;
@@ -169,8 +194,11 @@ const HELP = `Deploy and initialize the six Xverse PoX-5 lanes on Stacks mainnet
 Usage:
   bun run deploy -- --deployer-private-key <hex> --op-all <principal> [options]
   bun run deploy -- --op-0 <principal> ... --op-5 <principal> [options]
+  bun run deploy -- --resume <transactions.json> [options]
 
 Options:
+  --resume <path>               Resume a saved deployment without a private key.
+                                Waits for each transaction to confirm before the next.
   --deployer-private-key <hex>  Deployer key. Must derive ${MAINNET_DEPLOYER_ADDRESS}.
                                 Prompts securely when omitted.
   --op-all <principal>          Use one initial operator for all six lanes.
@@ -294,13 +322,24 @@ export function resolveOperators(values: Record<string, string | boolean | undef
   ) as Record<Lane, string>;
 }
 
+function parseApiUrl(value: string, label: string): string {
+  const apiUrl = value.replace(/\/+$/, "");
+  try {
+    new URL(apiUrl);
+  } catch {
+    fail(`${label} must be a valid URL.`);
+  }
+  return apiUrl;
+}
+
 function parseCliOptions(): CliOptions | null {
   const options: Record<string, { type: "string" | "boolean"; default?: string | boolean }> = {
     help: { type: "boolean", default: false },
+    resume: { type: "string" },
     "deployer-private-key": { type: "string" },
     broadcast: { type: "boolean", default: false },
     "fee-ustx": { type: "string" },
-    "api-url": { type: "string", default: DEFAULT_API_URL },
+    "api-url": { type: "string" },
     "op-all": { type: "string" },
     "signer-manager-1": { type: "string" },
     "signer-manager-2": { type: "string" },
@@ -315,11 +354,32 @@ function parseCliOptions(): CliOptions | null {
   }
 
   const apiUrlValue = parsed.values["api-url"];
-  const apiUrl = typeof apiUrlValue === "string" ? apiUrlValue.replace(/\/+$/, "") : DEFAULT_API_URL;
-  try {
-    new URL(apiUrl);
-  } catch {
-    fail("--api-url must be a valid URL.");
+  const apiUrl = typeof apiUrlValue === "string"
+    ? parseApiUrl(apiUrlValue, "--api-url")
+    : undefined;
+  const resumeValue = parsed.values.resume;
+  if (typeof resumeValue === "string") {
+    const deployOnlyFlags = [
+      "deployer-private-key",
+      "fee-ustx",
+      "op-all",
+      "signer-manager-1",
+      "signer-manager-2",
+      "signer-manager-3",
+      ...LANES.map((lane) => `op-${lane}`),
+    ];
+    const incompatible = deployOnlyFlags.filter(
+      (flag) => typeof parsed.values[flag] === "string",
+    );
+    if (incompatible.length > 0) {
+      fail(`--resume cannot be combined with ${incompatible.map((flag) => `--${flag}`).join(", ")}.`);
+    }
+    return {
+      mode: "resume",
+      resumePath: resolve(resumeValue),
+      broadcast: parsed.values.broadcast === true,
+      apiUrl,
+    };
   }
 
   const managers = DEFAULT_SIGNER_MANAGERS.map((defaultPrincipal, index) => {
@@ -336,11 +396,12 @@ function parseCliOptions(): CliOptions | null {
   const privateKeyValue = parsed.values["deployer-private-key"];
   const feeValue = parsed.values["fee-ustx"];
   return {
+    mode: "deploy",
     deployerPrivateKey:
       typeof privateKeyValue === "string" ? privateKeyValue : undefined,
     broadcast: parsed.values.broadcast === true,
     feeUstx: parseFeeUstx(typeof feeValue === "string" ? feeValue : undefined),
-    apiUrl,
+    apiUrl: apiUrl ?? DEFAULT_API_URL,
     operators: resolveOperators(parsed.values),
     signerManagers: managers,
   };
@@ -822,6 +883,376 @@ function isBroadcastRejection(
   return "error" in result;
 }
 
+function normalizeTxid(txid: string): string {
+  const normalized = txid.replace(/^0x/i, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(normalized)) {
+    fail(`Invalid transaction ID: ${txid}`);
+  }
+  return normalized;
+}
+
+function loadResumeDeployment(path: string): {
+  deployment: SavedDeployment;
+  prepared: PreparedTransaction[];
+} {
+  let value: unknown;
+  try {
+    value = readJson<unknown>(path);
+  } catch (error) {
+    fail(`Could not read resume file ${path}: ${errorDetails(error).message}`);
+  }
+
+  if (typeof value !== "object" || value === null) {
+    fail(`${path} is not a saved Xverse deployment.`);
+  }
+  const deployment = value as SavedDeployment;
+  if (
+    deployment.schemaVersion !== 1 ||
+    deployment.network !== NETWORK ||
+    deployment.deployerAddress !== MAINNET_DEPLOYER_ADDRESS ||
+    !Array.isArray(deployment.transactions) ||
+    deployment.transactions.length !== 18
+  ) {
+    fail(`${path} is not an expected 18-transaction Xverse mainnet deployment.`);
+  }
+
+  let baseNonce: bigint;
+  try {
+    baseNonce = BigInt(deployment.baseNonce);
+  } catch {
+    fail(`${path} has an invalid base nonce.`);
+  }
+
+  const seenTxids = new Set<string>();
+  const prepared = deployment.transactions.map((record, index) => {
+    if (
+      record.order !== index + 1 ||
+      !isLane(record.lane) ||
+      typeof record.rawTransaction !== "string" ||
+      typeof record.txid !== "string" ||
+      record.nonce !== (baseNonce + BigInt(index)).toString()
+    ) {
+      fail(`${path} has invalid transaction metadata at order ${index + 1}.`);
+    }
+
+    let transaction: StacksTransactionWire;
+    try {
+      transaction = deserializeTransaction(record.rawTransaction);
+    } catch (error) {
+      fail(
+        `${path} contains an invalid raw transaction at order ${record.order}: ${errorDetails(error).message}`,
+      );
+    }
+    const txid = normalizeTxid(transaction.txid());
+    if (
+      txid !== normalizeTxid(record.txid) ||
+      transaction.auth.spendingCondition.nonce.toString() !== record.nonce ||
+      seenTxids.has(txid)
+    ) {
+      fail(`${path} has a transaction integrity mismatch at order ${record.order}.`);
+    }
+    seenTxids.add(txid);
+    return { transaction, record };
+  });
+
+  return { deployment, prepared };
+}
+
+async function fetchTransactionStatus(
+  txid: string,
+  apiUrl: string,
+  apiFetch: typeof fetch,
+): Promise<TransactionStatus> {
+  const normalizedTxid = normalizeTxid(txid);
+  const response = await apiFetch(
+    `${apiUrl}/extended/v1/tx/0x${normalizedTxid}?unanchored=true`,
+    { headers: { Accept: "application/json" } },
+  );
+  if (response.status === 404) return { state: "unknown" };
+  if (!response.ok) {
+    fail(`Could not fetch transaction ${normalizedTxid}: ${await responseError(response)}`);
+  }
+
+  const text = await response.text();
+  let value: unknown;
+  try {
+    value = JSON.parse(text) as unknown;
+  } catch {
+    fail(`Transaction status response was not JSON: ${text}`);
+  }
+  if (typeof value !== "object" || value === null) {
+    fail(`Transaction status response for ${normalizedTxid} was invalid.`);
+  }
+  const body = value as Record<string, unknown>;
+  if (typeof body.tx_status !== "string") {
+    fail(`Transaction status response for ${normalizedTxid} has no tx_status.`);
+  }
+  if (
+    typeof body.tx_id === "string" &&
+    normalizeTxid(body.tx_id) !== normalizedTxid
+  ) {
+    fail(`Transaction status response returned the wrong transaction ID.`);
+  }
+
+  return {
+    state: "known",
+    details: {
+      txid: normalizedTxid,
+      status: body.tx_status,
+      blockHeight:
+        typeof body.block_height === "number" ? body.block_height : undefined,
+      blockHash:
+        typeof body.block_hash === "string" ? body.block_hash : undefined,
+      canonical:
+        typeof body.canonical === "boolean" ? body.canonical : undefined,
+    },
+  };
+}
+
+export function transactionStatusDisposition(
+  status: string,
+  canonical = true,
+): "confirmed" | "pending" | "failed" {
+  if (status === "success" && canonical) return "confirmed";
+  if (status === "pending") return "pending";
+  return "failed";
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
+}
+
+async function waitForSuccessfulConfirmation(
+  item: PreparedTransaction,
+  deployment: SavedDeployment,
+  path: string,
+  apiUrl: string,
+  apiFetch: typeof fetch,
+): Promise<void> {
+  const deadline = Date.now() + CONFIRMATION_TIMEOUT_MS;
+  console.log(`Waiting for transaction ${item.record.order} to confirm...`);
+
+  while (Date.now() < deadline) {
+    const status = await fetchTransactionStatus(item.record.txid, apiUrl, apiFetch);
+    if (status.state === "known") {
+      const disposition = transactionStatusDisposition(
+        status.details.status,
+        status.details.canonical !== false,
+      );
+      if (disposition === "confirmed") {
+        item.record.broadcast = {
+          status: "confirmed",
+          response: { transactionStatus: status.details },
+        };
+        saveDeployment(path, deployment);
+        console.log(
+          `Transaction ${item.record.order} confirmed${
+            status.details.blockHeight === undefined
+              ? ""
+              : ` at block ${status.details.blockHeight}`
+          }.`,
+        );
+        return;
+      }
+      if (disposition === "failed") {
+        item.record.broadcast = {
+          status: "failed",
+          response: { transactionStatus: status.details },
+        };
+        deployment.broadcast.status = "failed";
+        saveDeployment(path, deployment);
+        fail(
+          `Transaction ${item.record.order} reached terminal status ${status.details.status}.`,
+        );
+      }
+    }
+    await sleep(CONFIRMATION_POLL_INTERVAL_MS);
+  }
+
+  item.record.broadcast = {
+    status: "failed",
+    response: {
+      error: `Timed out after ${CONFIRMATION_TIMEOUT_MS / 1_000} seconds waiting for confirmation.`,
+    },
+  };
+  deployment.broadcast.status = "failed";
+  saveDeployment(path, deployment);
+  fail(`Timed out waiting for transaction ${item.record.order} to confirm.`);
+}
+
+async function broadcastPreparedTransaction(
+  item: PreparedTransaction,
+  total: number,
+  deployment: SavedDeployment,
+  path: string,
+  apiUrl: string,
+  apiFetch: typeof fetch,
+): Promise<void> {
+  process.stdout.write(
+    `Broadcasting ${item.record.order}/${total}: ${item.record.contractId}${item.record.function ? `.${item.record.function}` : ""} ... `,
+  );
+  let httpResponse: BroadcastHttpResponseDetails | undefined;
+  const diagnosticFetch = (async (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => {
+    const response = await apiFetch(input, init);
+    httpResponse = await captureBroadcastHttpResponse(input, init, response);
+    return response;
+  }) as typeof fetch;
+
+  try {
+    const result = await broadcastTransaction({
+      transaction: item.transaction,
+      network: NETWORK,
+      client: { baseUrl: apiUrl, fetch: diagnosticFetch },
+    });
+    if (isBroadcastRejection(result)) {
+      item.record.broadcast = {
+        status: "rejected",
+        response: { nodeResponse: result, httpResponse },
+      };
+      deployment.broadcast.status = "failed";
+      saveDeployment(path, deployment);
+      console.log("rejected");
+      fail(
+        `Transaction ${item.record.order} was rejected: ${result.reason ?? result.error}`,
+      );
+    }
+    if (normalizeTxid(result.txid) !== normalizeTxid(item.record.txid)) {
+      fail(`Transaction ${item.record.order} broadcast returned an unexpected txid.`);
+    }
+    item.record.broadcast = { status: "accepted", response: result };
+    saveDeployment(path, deployment);
+    console.log(result.txid);
+  } catch (error) {
+    if (item.record.broadcast.status === "rejected") throw error;
+
+    const details = errorDetails(error);
+    item.record.broadcast = {
+      status: "failed",
+      response: { error: details, httpResponse },
+    };
+    deployment.broadcast.status = "failed";
+    saveDeployment(path, deployment);
+    throw new Error(
+      formatBroadcastFailure(item.record.order, details, httpResponse),
+      { cause: error },
+    );
+  }
+}
+
+export async function runSequentialResume<T>(
+  items: readonly T[],
+  handlers: {
+    inspect: (item: T) => Promise<"confirmed" | "pending" | "unknown">;
+    broadcast: (item: T) => Promise<void>;
+    waitForConfirmation: (item: T) => Promise<void>;
+  },
+): Promise<void> {
+  for (const item of items) {
+    const state = await handlers.inspect(item);
+    if (state === "confirmed") continue;
+    if (state === "unknown") await handlers.broadcast(item);
+    await handlers.waitForConfirmation(item);
+  }
+}
+
+async function resumeSavedDeployment(
+  cli: ResumeCliOptions,
+  apiFetch: typeof fetch,
+): Promise<void> {
+  const { deployment, prepared } = loadResumeDeployment(cli.resumePath);
+  const apiUrl = cli.apiUrl ?? parseApiUrl(deployment.apiUrl, "Saved Stacks API URL");
+  deployment.apiUrl = apiUrl;
+
+  console.log("\nResume Xverse PoX-5 deployment");
+  console.log(`Transactions file: ${cli.resumePath}`);
+  console.log(`Stacks API:        ${apiUrl}`);
+  console.log(`Deployer:          ${deployment.deployerAddress}`);
+
+  let shouldBroadcast = cli.broadcast;
+  if (!cli.broadcast) {
+    if (process.stdin.isTTY) {
+      shouldBroadcast = await confirm({
+        message: "Resume broadcasting transactions?",
+        default: false,
+      });
+    } else {
+      console.log("No interactive terminal is available; transactions will not be broadcast.");
+    }
+  }
+  if (!shouldBroadcast) {
+    console.log("Resume declined; no transactions were broadcast.");
+    return;
+  }
+
+  deployment.broadcast.selected = true;
+  deployment.broadcast.source = cli.broadcast ? "flag" : "interactive";
+  deployment.broadcast.status = "broadcasting";
+  saveDeployment(cli.resumePath, deployment);
+
+  try {
+    await runSequentialResume(prepared, {
+      inspect: async (item) => {
+        const status = await fetchTransactionStatus(item.record.txid, apiUrl, apiFetch);
+        if (status.state === "unknown") return "unknown";
+
+        const disposition = transactionStatusDisposition(
+          status.details.status,
+          status.details.canonical !== false,
+        );
+        if (disposition === "failed") {
+          item.record.broadcast = {
+            status: "failed",
+            response: { transactionStatus: status.details },
+          };
+          saveDeployment(cli.resumePath, deployment);
+          fail(
+            `Transaction ${item.record.order} has terminal status ${status.details.status}; refusing to continue.`,
+          );
+        }
+        if (disposition === "confirmed") {
+          item.record.broadcast = {
+            status: "confirmed",
+            response: { transactionStatus: status.details },
+          };
+          saveDeployment(cli.resumePath, deployment);
+          console.log(`Transaction ${item.record.order}/18 already confirmed; skipping.`);
+        } else {
+          console.log(`Transaction ${item.record.order}/18 is pending; waiting.`);
+        }
+        return disposition;
+      },
+      broadcast: (item) =>
+        broadcastPreparedTransaction(
+          item,
+          prepared.length,
+          deployment,
+          cli.resumePath,
+          apiUrl,
+          apiFetch,
+        ),
+      waitForConfirmation: (item) =>
+        waitForSuccessfulConfirmation(
+          item,
+          deployment,
+          cli.resumePath,
+          apiUrl,
+          apiFetch,
+        ),
+    });
+  } catch (error) {
+    deployment.broadcast.status = "failed";
+    saveDeployment(cli.resumePath, deployment);
+    throw error;
+  }
+
+  deployment.broadcast.status = "complete";
+  saveDeployment(cli.resumePath, deployment);
+  console.log(`All transactions confirmed. Updated: ${cli.resumePath}`);
+}
+
 async function broadcastPreparedTransactions(
   prepared: PreparedTransaction[],
   deployment: SavedDeployment,
@@ -832,56 +1263,22 @@ async function broadcastPreparedTransactions(
   deployment.broadcast.status = "broadcasting";
   saveDeployment(path, deployment);
 
-  for (const [index, item] of prepared.entries()) {
-    process.stdout.write(
-      `Broadcasting ${index + 1}/${prepared.length}: ${item.record.contractId}${item.record.function ? `.${item.record.function}` : ""} ... `,
+  for (const item of prepared) {
+    await broadcastPreparedTransaction(
+      item,
+      prepared.length,
+      deployment,
+      path,
+      apiUrl,
+      apiFetch,
     );
-    let httpResponse: BroadcastHttpResponseDetails | undefined;
-    const diagnosticFetch = (async (
-      input: Parameters<typeof fetch>[0],
-      init?: Parameters<typeof fetch>[1],
-    ) => {
-      const response = await apiFetch(input, init);
-      httpResponse = await captureBroadcastHttpResponse(input, init, response);
-      return response;
-    }) as typeof fetch;
-
-    try {
-      const result = await broadcastTransaction({
-        transaction: item.transaction,
-        network: NETWORK,
-        client: { baseUrl: apiUrl, fetch: diagnosticFetch },
-      });
-      if (isBroadcastRejection(result)) {
-        item.record.broadcast = {
-          status: "rejected",
-          response: { nodeResponse: result, httpResponse },
-        };
-        deployment.broadcast.status = "failed";
-        saveDeployment(path, deployment);
-        console.log("rejected");
-        fail(
-          `Transaction ${item.record.order} was rejected: ${result.reason ?? result.error}`,
-        );
-      }
-      item.record.broadcast = { status: "accepted", response: result };
-      saveDeployment(path, deployment);
-      console.log(result.txid);
-    } catch (error) {
-      if (item.record.broadcast.status === "rejected") throw error;
-
-      const details = errorDetails(error);
-      item.record.broadcast = {
-        status: "failed",
-        response: { error: details, httpResponse },
-      };
-      deployment.broadcast.status = "failed";
-      saveDeployment(path, deployment);
-      throw new Error(
-        formatBroadcastFailure(item.record.order, details, httpResponse),
-        { cause: error },
-      );
-    }
+    await waitForSuccessfulConfirmation(
+      item,
+      deployment,
+      path,
+      apiUrl,
+      apiFetch,
+    );
   }
 
   deployment.broadcast.status = "complete";
@@ -891,6 +1288,12 @@ async function broadcastPreparedTransactions(
 export async function main(): Promise<void> {
   const cli = parseCliOptions();
   if (cli === null) return;
+
+  const apiFetch = createApiFetch();
+  if (cli.mode === "resume") {
+    await resumeSavedDeployment(cli, apiFetch);
+    return;
+  }
 
   let privateKeyInput = cli.deployerPrivateKey;
   if (privateKeyInput === undefined) {
@@ -907,7 +1310,6 @@ export async function main(): Promise<void> {
   const privateKey = validatePrivateKey(privateKeyInput);
   const deployerAddress = getAddressFromPrivateKey(privateKey, NETWORK);
   assertMainnetDeployerAddress(deployerAddress);
-  const apiFetch = createApiFetch();
 
   const { operations, sources } = loadAndVerifyOperations();
   console.log("Verifying signer managers and deployment inputs...");

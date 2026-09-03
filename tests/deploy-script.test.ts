@@ -7,6 +7,8 @@ import {
   captureBroadcastHttpResponse,
   parseFeeUstx,
   resolveOperators,
+  runSequentialResume,
+  transactionStatusDisposition,
 } from "../scripts/deploy";
 
 const operator = "SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE";
@@ -108,5 +110,49 @@ describe("deployment script inputs", () => {
 
     expect(details.body).toHaveLength(16_384);
     expect(details.bodyTruncated).toBe(true);
+  });
+
+  it("classifies transaction statuses conservatively", () => {
+    expect(transactionStatusDisposition("success")).toBe("confirmed");
+    expect(transactionStatusDisposition("success", false)).toBe("failed");
+    expect(transactionStatusDisposition("pending")).toBe("pending");
+    expect(transactionStatusDisposition("abort_by_response")).toBe("failed");
+    expect(transactionStatusDisposition("dropped_replace_by_fee")).toBe("failed");
+    expect(transactionStatusDisposition("unexpected-status")).toBe("failed");
+  });
+
+  it("waits for each resumed transaction before inspecting the next", async () => {
+    const events: string[] = [];
+    const states = new Map<number, "confirmed" | "pending" | "unknown">([
+      [1, "confirmed"],
+      [2, "unknown"],
+      [3, "pending"],
+    ]);
+
+    await runSequentialResume([1, 2, 3], {
+      inspect: async (item) => {
+        events.push(`inspect-${item}`);
+        return states.get(item)!;
+      },
+      broadcast: async (item) => {
+        events.push(`broadcast-${item}`);
+      },
+      waitForConfirmation: async (item) => {
+        events.push(`wait-start-${item}`);
+        await Promise.resolve();
+        events.push(`wait-end-${item}`);
+      },
+    });
+
+    expect(events).toEqual([
+      "inspect-1",
+      "inspect-2",
+      "broadcast-2",
+      "wait-start-2",
+      "wait-end-2",
+      "inspect-3",
+      "wait-start-3",
+      "wait-end-3",
+    ]);
   });
 });
