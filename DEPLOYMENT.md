@@ -145,10 +145,35 @@ Anyone with that file can broadcast its transactions. Supplying the private key
 on the command line may also expose it in shell history and process listings;
 omit the option to use the masked prompt.
 
-The script broadcasts in order and records each node response, but does not
-wait for confirmation, retry, resume, skip existing deployments, or alter
-nonces after signing. Handle partial execution manually. PoX-5 bond allowlisting
-remains a separate operation.
+The script broadcasts in nonce order, waits for each transaction to confirm
+successfully before broadcasting the next, and records the node response and
+confirmation status. It stops on rejection, a terminal transaction status, or
+a 30-minute confirmation timeout. PoX-5 bond allowlisting remains a separate
+operation.
+
+### Resuming a partial deployment
+
+Resume from the signed transaction file without supplying the deployer key or
+operator inputs:
+
+```bash
+# Inspect the file, then ask before resuming.
+bun run deploy -- \
+  --resume deployment-transactions/deployment-<UNIX-TIMESTAMP-SECONDS>/transactions.json
+
+# Resume immediately without the confirmation prompt.
+bun run deploy -- \
+  --resume deployment-transactions/deployment-<UNIX-TIMESTAMP-SECONDS>/transactions.json \
+  --broadcast
+```
+
+Resume mode validates every saved raw transaction against its recorded txid and
+nonce. In order, it skips transactions already confirmed successfully, waits
+for pending transactions, and broadcasts transactions not known to the API. It
+always waits for successful confirmation before inspecting or broadcasting the
+next transaction. A dropped or aborted transaction is treated as terminal and
+requires manual review rather than an automatic retry. `--api-url` may override
+the API recorded in the file.
 
 ## Pre-deployment verification
 
