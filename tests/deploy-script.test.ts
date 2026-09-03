@@ -4,6 +4,7 @@ import {
   LANES,
   MAINNET_DEPLOYER_ADDRESS,
   assertMainnetDeployerAddress,
+  captureBroadcastHttpResponse,
   parseFeeUstx,
   resolveOperators,
 } from "../scripts/deploy";
@@ -63,5 +64,49 @@ describe("deployment script inputs", () => {
     expect(parseFeeUstx(undefined)).toBeUndefined();
     expect(() => parseFeeUstx("0")).toThrow(/greater than zero/);
     expect(() => parseFeeUstx("1.5")).toThrow(/positive integer/);
+  });
+
+  it("captures a plain-text broadcast rejection without consuming it", async () => {
+    const response = new Response("Failed to decode transaction", {
+      status: 400,
+      statusText: "Bad Request",
+      headers: {
+        "content-type": "text/plain; charset=UTF-8",
+        "cf-ray": "request-id",
+      },
+    });
+
+    const details = await captureBroadcastHttpResponse(
+      "https://api.hiro.so/v2/transactions",
+      { method: "POST" },
+      response,
+    );
+
+    expect(details).toMatchObject({
+      url: "https://api.hiro.so/v2/transactions",
+      method: "POST",
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      headers: {
+        "content-type": "text/plain; charset=UTF-8",
+        "cf-ray": "request-id",
+      },
+      body: "Failed to decode transaction",
+      bodyTruncated: false,
+    });
+    expect(await response.text()).toBe("Failed to decode transaction");
+  });
+
+  it("truncates an unexpectedly large broadcast response", async () => {
+    const response = new Response("x".repeat(16_385), { status: 502 });
+    const details = await captureBroadcastHttpResponse(
+      "https://api.hiro.so/v2/transactions",
+      { method: "POST" },
+      response,
+    );
+
+    expect(details.body).toHaveLength(16_384);
+    expect(details.bodyTruncated).toBe(true);
   });
 });
