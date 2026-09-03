@@ -25,10 +25,10 @@ for (const line of lcov.split("\n")) {
   if (line.startsWith("SF:")) sourceFile = line.slice(3);
   if (!line.startsWith("FNDA:")) continue;
   const staker = sourceFile.endsWith(
-    "/contracts/generated/simnet/sbtc-bond-staker-0.clar",
+    "/contracts/generated/simnet/sbtc-bond-staker-v1-0.clar",
   );
   const treasury = sourceFile.endsWith(
-    "/contracts/generated/simnet/sbtc-bond-treasury-0.clar",
+    "/contracts/generated/simnet/sbtc-bond-treasury-v1-0.clar",
   );
   if (!staker && !treasury) continue;
 
@@ -103,7 +103,7 @@ const requiredEveryLane = [
   "unstake-sbtc-early",
 ];
 for (let lane = 0; lane < 6; lane += 1) {
-  const contractSuffix = `.sbtc-bond-staker-${lane}`;
+  const contractSuffix = `.sbtc-bond-staker-v1-${lane}`;
   const observed = new Set(
     costs
       .filter((record) => record.contract_id.endsWith(contractSuffix))

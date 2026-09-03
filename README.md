@@ -7,8 +7,8 @@ bonds.
 
 The reviewed canonical implementation is the lane-0 development pair:
 
-- `sbtc-bond-treasury-0` — holds queued and released member sBTC principal;
-- `sbtc-bond-staker-0` — deposits, full-position rollover commitments, epochs,
+- `sbtc-bond-treasury-v1-0` — holds queued and released member sBTC principal;
+- `sbtc-bond-staker-v1-0` — deposits, full-position rollover commitments, epochs,
   rewards, exits, claims, operators, and PoX-5 registration.
 
 The source files omit a lane suffix so they remain the only canonical
@@ -28,19 +28,19 @@ The deployed contract names are externally significant. The six isolated
 mainnet staker principals are:
 
 ```text
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-0
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-1
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-2
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-3
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-4
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-5
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-0
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-1
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-2
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-3
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-4
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-5
 ```
 
 The publisher also hosts the three reviewed `xverse-signer-manager-X`
 contracts. Reusing that standard principal with unique contract names is valid;
 the retired PoX-4 pool address has no role in this suite.
 
-Every lane has a dedicated `sbtc-bond-treasury-X`, references only that sibling,
+Every lane has a dedicated `sbtc-bond-treasury-v1-X`, references only that sibling,
 and accepts only bond indexes where `index mod 6 = X`. See
 [DEPLOYMENT.md](DEPLOYMENT.md) for exact principal forms, network protocol
 principals, generated deployment inputs, the Bun mainnet deployment script,

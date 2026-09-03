@@ -5,7 +5,7 @@
 ;; effective sender and asset owner instead.
 
 (define-public (forward-deposit (sats uint))
-  (contract-call? .sbtc-bond-staker-0 deposit sats)
+  (contract-call? .sbtc-bond-staker-v1-0 deposit sats)
 )
 
 (define-public (wallet-deposit
@@ -19,18 +19,18 @@
       )
         (with-stx ustx)
       )
-      (try! (contract-call? .sbtc-bond-staker-0 deposit sats))
+      (try! (contract-call? .sbtc-bond-staker-v1-0 deposit sats))
     ))))
     (ok result)
   )
 )
 
 (define-public (forward-withdraw)
-  (contract-call? .sbtc-bond-staker-0 withdraw)
+  (contract-call? .sbtc-bond-staker-v1-0 withdraw)
 )
 
 (define-public (wallet-withdraw)
-  (let ((result (try! (as-contract? () (try! (contract-call? .sbtc-bond-staker-0 withdraw))))))
+  (let ((result (try! (as-contract? () (try! (contract-call? .sbtc-bond-staker-v1-0 withdraw))))))
     (ok result)
   )
 )
@@ -40,7 +40,7 @@
     (allocation-sats uint)
     (min-sats uint)
   )
-  (contract-call? .sbtc-bond-staker-0 bind-bond index allocation-sats min-sats)
+  (contract-call? .sbtc-bond-staker-v1-0 bind-bond index allocation-sats min-sats)
 )
 
 (define-public (wallet-bind-bond
@@ -49,7 +49,7 @@
     (min-sats uint)
   )
   (let ((result (try! (as-contract? ()
-      (try! (contract-call? .sbtc-bond-staker-0 bind-bond index allocation-sats
+      (try! (contract-call? .sbtc-bond-staker-v1-0 bind-bond index allocation-sats
         min-sats
       ))
     ))))
@@ -61,7 +61,7 @@
     (who principal)
     (enabled bool)
   )
-  (contract-call? .sbtc-bond-staker-0 update-operator who enabled)
+  (contract-call? .sbtc-bond-staker-v1-0 update-operator who enabled)
 )
 
 (define-public (wallet-update-operator
@@ -69,7 +69,7 @@
     (enabled bool)
   )
   (let ((result (try! (as-contract? ()
-      (try! (contract-call? .sbtc-bond-staker-0 update-operator who enabled))
+      (try! (contract-call? .sbtc-bond-staker-v1-0 update-operator who enabled))
     ))))
     (ok result)
   )
@@ -78,7 +78,7 @@
 ;; A second generated lane proves that caller semantics are instance-local and
 ;; are not an artifact of the canonical lane-0 fixture.
 (define-public (forward-deposit-lane-3 (sats uint))
-  (contract-call? .sbtc-bond-staker-3 deposit sats)
+  (contract-call? .sbtc-bond-staker-v1-3 deposit sats)
 )
 
 (define-public (wallet-deposit-lane-3
@@ -92,18 +92,18 @@
       )
         (with-stx ustx)
       )
-      (try! (contract-call? .sbtc-bond-staker-3 deposit sats))
+      (try! (contract-call? .sbtc-bond-staker-v1-3 deposit sats))
     ))))
     (ok result)
   )
 )
 
 (define-public (forward-withdraw-lane-3)
-  (contract-call? .sbtc-bond-staker-3 withdraw)
+  (contract-call? .sbtc-bond-staker-v1-3 withdraw)
 )
 
 (define-public (wallet-withdraw-lane-3)
-  (let ((result (try! (as-contract? () (try! (contract-call? .sbtc-bond-staker-3 withdraw))))))
+  (let ((result (try! (as-contract? () (try! (contract-call? .sbtc-bond-staker-v1-3 withdraw))))))
     (ok result)
   )
 )
@@ -112,25 +112,25 @@
 ;; stakers have no cross-lane call path, so the complete staker/controller
 ;; matrix is checked statically while these calls prove the runtime guard.
 (define-public (attempt-treasury-0-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-0 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-0 payout u1 recipient)
 )
 
 (define-public (attempt-treasury-1-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-1 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-1 payout u1 recipient)
 )
 
 (define-public (attempt-treasury-2-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-2 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-2 payout u1 recipient)
 )
 
 (define-public (attempt-treasury-3-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-3 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-3 payout u1 recipient)
 )
 
 (define-public (attempt-treasury-4-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-4 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-4 payout u1 recipient)
 )
 
 (define-public (attempt-treasury-5-payout (recipient principal))
-  (contract-call? .sbtc-bond-treasury-5 payout u1 recipient)
+  (contract-call? .sbtc-bond-treasury-v1-5 payout u1 recipient)
 )

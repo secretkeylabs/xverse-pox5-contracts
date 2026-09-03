@@ -23,8 +23,8 @@ import {
 export const LANE_IDS = [0, 1, 2, 3, 4, 5] as const;
 export type LaneId = (typeof LANE_IDS)[number];
 
-export const laneStaker = (lane: number) => `sbtc-bond-staker-${lane}`;
-export const laneTreasury = (lane: number) => `sbtc-bond-treasury-${lane}`;
+export const laneStaker = (lane: number) => `sbtc-bond-staker-v1-${lane}`;
+export const laneTreasury = (lane: number) => `sbtc-bond-treasury-v1-${lane}`;
 export const laneStakerPrincipal = (lane: number) =>
   `${deployer}.${laneStaker(lane)}`;
 export const laneTreasuryPrincipal = (lane: number) =>

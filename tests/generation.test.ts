@@ -105,8 +105,8 @@ describe("deterministic six-lane generation", () => {
       expect(networkRecords).toHaveLength(12);
       expect(networkRecords.map((record) => record.contractName).sort()).toEqual(
         LANES.flatMap((lane) => [
-          `sbtc-bond-staker-${lane}`,
-          `sbtc-bond-treasury-${lane}`,
+          `sbtc-bond-staker-v1-${lane}`,
+          `sbtc-bond-treasury-v1-${lane}`,
         ]).sort(),
       );
     }
@@ -144,7 +144,7 @@ describe("deterministic six-lane generation", () => {
         expect(content).toContain(
           "generation (default-to false (map-get? consumed-generations generation))",
         );
-        expect(content).toContain(`.sbtc-bond-treasury-${artifact.lane}`);
+        expect(content).toContain(`.sbtc-bond-treasury-v1-${artifact.lane}`);
       } else {
         expect(content).not.toContain("unstake-sbtc-early");
         expect(content).not.toContain("credit-offset");
@@ -161,10 +161,10 @@ describe("deterministic six-lane generation", () => {
       if (artifact.kind === "staker") {
         expect(content).toContain(network.pox5Principal);
         expect(content).toContain(`(define-constant LANE_ID u${artifact.lane})`);
-        expect(content).toContain(`.sbtc-bond-treasury-${artifact.lane}`);
+        expect(content).toContain(`.sbtc-bond-treasury-v1-${artifact.lane}`);
       } else {
         expect(content).toContain(
-          `(define-constant CONTROLLER .sbtc-bond-staker-${artifact.lane})`,
+          `(define-constant CONTROLLER .sbtc-bond-staker-v1-${artifact.lane})`,
         );
       }
 
@@ -183,14 +183,14 @@ describe("deterministic six-lane generation", () => {
           "(define-constant LANE_ID u0)",
         );
         normalized = normalized.replaceAll(
-          `.sbtc-bond-treasury-${artifact.lane}`,
-          ".sbtc-bond-treasury-0",
+          `.sbtc-bond-treasury-v1-${artifact.lane}`,
+          ".sbtc-bond-treasury-v1-0",
         );
         expect(normalized).toBe(canonicalStaker);
       } else {
         normalized = normalized.replaceAll(
-          `.sbtc-bond-staker-${artifact.lane}`,
-          ".sbtc-bond-staker-0",
+          `.sbtc-bond-staker-v1-${artifact.lane}`,
+          ".sbtc-bond-staker-v1-0",
         );
         expect(normalized).toBe(canonicalTreasury);
       }
@@ -224,7 +224,7 @@ describe("deterministic six-lane generation", () => {
         "signerManagerPrincipal",
       );
       expect(deployment.stakerPrincipalForms).toEqual(
-        LANES.map((lane) => `<Xverse>.sbtc-bond-staker-${lane}`),
+        LANES.map((lane) => `<Xverse>.sbtc-bond-staker-v1-${lane}`),
       );
       expect(deployment.operations).toHaveLength(18);
 
@@ -241,9 +241,9 @@ describe("deterministic six-lane generation", () => {
           "contract-call-template",
         ]);
         expect(laneOperations.map((operation) => operation.contractName)).toEqual([
-          `sbtc-bond-treasury-${lane}`,
-          `sbtc-bond-staker-${lane}`,
-          `sbtc-bond-staker-${lane}`,
+          `sbtc-bond-treasury-v1-${lane}`,
+          `sbtc-bond-staker-v1-${lane}`,
+          `sbtc-bond-staker-v1-${lane}`,
         ]);
         expect(laneOperations[0]!.order).toBeLessThan(laneOperations[1]!.order);
 
@@ -317,9 +317,15 @@ describe("generator rejection and drift checks", () => {
     expect(() =>
       validateGeneratedArtifact(
         staker,
-        content.replaceAll(".sbtc-bond-treasury-0", ".sbtc-bond-treasury-1"),
+        content.replaceAll(".sbtc-bond-treasury-v1-0", ".sbtc-bond-treasury-v1-1"),
       ),
     ).toThrow(/cross-lane treasury/);
+    expect(() =>
+      validateGeneratedArtifact(
+        staker,
+        content.replaceAll(".sbtc-bond-treasury-v1-0", ".sbtc-bond-treasury-0"),
+      ),
+    ).toThrow(/unversioned contract name/);
     expect(() =>
       validateGeneratedArtifact(
         staker,
@@ -352,8 +358,8 @@ describe("generator rejection and drift checks", () => {
 describe("all six generated simnet lanes", () => {
   it("loads all pairs with observable lane IDs and same-lane controllers", () => {
     for (const lane of LANES) {
-      const staker = `sbtc-bond-staker-${lane}`;
-      const treasury = `sbtc-bond-treasury-${lane}`;
+      const staker = `sbtc-bond-staker-v1-${lane}`;
+      const treasury = `sbtc-bond-treasury-v1-${lane}`;
       const laneId = simnet.callReadOnlyFn(
         staker,
         "get-lane-id",
@@ -371,7 +377,7 @@ describe("all six generated simnet lanes", () => {
       expect(plain(controller)).toBe(`${deployer}.${staker}`);
     }
 
-    const staker = "sbtc-bond-staker-0";
+    const staker = "sbtc-bond-staker-v1-0";
     expect(
       simnet.callReadOnlyFn(
         staker,
@@ -403,7 +409,7 @@ describe("all six generated simnet lanes", () => {
 
   for (const lane of LANES) {
     it(`lane ${lane} rejects an adjacent lane and binds bond ${lane + 6}`, () => {
-      const staker = `sbtc-bond-staker-${lane}`;
+      const staker = `sbtc-bond-staker-v1-${lane}`;
       expectOk(registerSignerManager(), "register signer manager");
       expectOk(
         simnet.callPublicFn(
