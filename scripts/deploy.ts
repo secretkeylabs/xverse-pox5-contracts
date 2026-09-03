@@ -34,6 +34,8 @@ export const MAINNET_DEPLOYER_ADDRESS =
   "SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE";
 const EXPECTED_SIGNER_MANAGER_SOURCE_SHA256 =
   "c0a2cc8e83de2b1bc60e07c5e0f5da8991c6f79eb05d077bba8cb984eee226b3";
+const MAX_BROADCAST_RESPONSE_BODY_CHARS = 16_384;
+const MAX_CONSOLE_RESPONSE_BODY_CHARS = 2_000;
 
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
 export type Lane = (typeof LANES)[number];
@@ -109,6 +111,25 @@ interface PreparedTransactionRecord {
 interface PreparedTransaction {
   transaction: StacksTransactionWire;
   record: PreparedTransactionRecord;
+}
+
+export interface BroadcastHttpResponseDetails {
+  url: string;
+  method: string;
+  ok: boolean;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  bodyTruncated: boolean;
+  bodyReadError?: string;
+}
+
+interface ErrorDetails {
+  name: string;
+  message: string;
+  stack?: string;
+  cause?: ErrorDetails;
 }
 
 interface SavedDeployment {
@@ -415,6 +436,88 @@ function createApiFetch(): typeof fetch {
     headers.set("x-api-key", apiKey);
     return fetch(input, { ...init, headers });
   }) as typeof fetch;
+}
+
+function errorDetails(error: unknown, depth = 0): ErrorDetails {
+  if (!(error instanceof Error)) {
+    return { name: typeof error, message: String(error) };
+  }
+
+  const details: ErrorDetails = {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  };
+  if (error.cause !== undefined && depth < 3) {
+    details.cause = errorDetails(error.cause, depth + 1);
+  }
+  return details;
+}
+
+function requestUrl(input: Parameters<typeof fetch>[0]): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
+export async function captureBroadcastHttpResponse(
+  input: Parameters<typeof fetch>[0],
+  init: Parameters<typeof fetch>[1] | undefined,
+  response: Response,
+): Promise<BroadcastHttpResponseDetails> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, name) => {
+    headers[name] = value;
+  });
+
+  let body = "";
+  let bodyTruncated = false;
+  let bodyReadError: string | undefined;
+  try {
+    const fullBody = await response.clone().text();
+    bodyTruncated = fullBody.length > MAX_BROADCAST_RESPONSE_BODY_CHARS;
+    body = bodyTruncated
+      ? fullBody.slice(0, MAX_BROADCAST_RESPONSE_BODY_CHARS)
+      : fullBody;
+  } catch (error) {
+    bodyReadError = errorDetails(error).message;
+  }
+
+  const method =
+    init?.method ?? (input instanceof Request ? input.method : "GET");
+  return {
+    url: response.url || requestUrl(input),
+    method: method.toUpperCase(),
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+    body,
+    bodyTruncated,
+    bodyReadError,
+  };
+}
+
+function formatBroadcastFailure(
+  order: number,
+  error: ErrorDetails,
+  httpResponse: BroadcastHttpResponseDetails | undefined,
+): string {
+  if (httpResponse === undefined) {
+    return `Transaction ${order} broadcast failed: ${error.message}`;
+  }
+
+  const contentType = httpResponse.headers["content-type"];
+  const body = httpResponse.body ||
+    (httpResponse.bodyReadError
+      ? `<could not read response body: ${httpResponse.bodyReadError}>`
+      : "<empty response body>");
+  const consoleBody = body.length > MAX_CONSOLE_RESPONSE_BODY_CHARS
+    ? `${body.slice(0, MAX_CONSOLE_RESPONSE_BODY_CHARS)}…`
+    : body;
+  return `Transaction ${order} broadcast failed: HTTP ${httpResponse.status}${
+    httpResponse.statusText ? ` ${httpResponse.statusText}` : ""
+  } from ${httpResponse.url}${contentType ? ` (${contentType})` : ""}. Response: ${consoleBody}. Client error: ${error.message}`;
 }
 
 async function responseError(response: Response): Promise<string> {
@@ -733,14 +836,27 @@ async function broadcastPreparedTransactions(
     process.stdout.write(
       `Broadcasting ${index + 1}/${prepared.length}: ${item.record.contractId}${item.record.function ? `.${item.record.function}` : ""} ... `,
     );
+    let httpResponse: BroadcastHttpResponseDetails | undefined;
+    const diagnosticFetch = (async (
+      input: Parameters<typeof fetch>[0],
+      init?: Parameters<typeof fetch>[1],
+    ) => {
+      const response = await apiFetch(input, init);
+      httpResponse = await captureBroadcastHttpResponse(input, init, response);
+      return response;
+    }) as typeof fetch;
+
     try {
       const result = await broadcastTransaction({
         transaction: item.transaction,
         network: NETWORK,
-        client: { baseUrl: apiUrl, fetch: apiFetch },
+        client: { baseUrl: apiUrl, fetch: diagnosticFetch },
       });
       if (isBroadcastRejection(result)) {
-        item.record.broadcast = { status: "rejected", response: result };
+        item.record.broadcast = {
+          status: "rejected",
+          response: { nodeResponse: result, httpResponse },
+        };
         deployment.broadcast.status = "failed";
         saveDeployment(path, deployment);
         console.log("rejected");
@@ -752,15 +868,19 @@ async function broadcastPreparedTransactions(
       saveDeployment(path, deployment);
       console.log(result.txid);
     } catch (error) {
-      if (item.record.broadcast.status !== "rejected") {
-        item.record.broadcast = {
-          status: "failed",
-          response: error instanceof Error ? error.message : String(error),
-        };
-        deployment.broadcast.status = "failed";
-        saveDeployment(path, deployment);
-      }
-      throw error;
+      if (item.record.broadcast.status === "rejected") throw error;
+
+      const details = errorDetails(error);
+      item.record.broadcast = {
+        status: "failed",
+        response: { error: details, httpResponse },
+      };
+      deployment.broadcast.status = "failed";
+      saveDeployment(path, deployment);
+      throw new Error(
+        formatBroadcastFailure(item.record.order, details, httpResponse),
+        { cause: error },
+      );
     }
   }
 
