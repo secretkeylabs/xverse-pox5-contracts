@@ -6,6 +6,7 @@ import {
   avoidPreparePhase,
   bindNextBond,
   bootstrap,
+  boundBond,
   cancelRollover,
   claimPrincipal,
   claimRewards,
@@ -145,7 +146,7 @@ describe("per-instance accounting properties", () => {
     { label: "large unequal positions", amounts: [1_000_003, 2_000_033, 3_000_077] },
   ])("conserves principal, shares, commitments, and rewards for $label", ({ amounts }) => {
     const members = actors.slice(0, amounts.length);
-    const { bondStart } = bootstrap();
+    bootstrap();
 
     for (const [index, who] of members.entries()) {
       expect(deposit(who, amounts[index]).type).toBe("ok");
@@ -157,7 +158,7 @@ describe("per-instance accounting properties", () => {
     expect(deposit(last, amounts.at(-1)!).type).toBe("ok");
     assertAccounting(members);
 
-    advanceToBurnHeight(bondStart - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake().type).toBe("ok");
     assertAccounting(members);
 

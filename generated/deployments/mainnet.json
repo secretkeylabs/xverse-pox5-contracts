@@ -11,21 +11,21 @@
     "poolOperatorPrincipal": "initial keyed operator principal"
   },
   "stakerPrincipalForms": [
-    "<Xverse>.sbtc-bond-staker-v1-0",
-    "<Xverse>.sbtc-bond-staker-v1-1",
-    "<Xverse>.sbtc-bond-staker-v1-2",
-    "<Xverse>.sbtc-bond-staker-v1-3",
-    "<Xverse>.sbtc-bond-staker-v1-4",
-    "<Xverse>.sbtc-bond-staker-v1-5"
+    "<Xverse>.sbtc-bond-staker-v2-0",
+    "<Xverse>.sbtc-bond-staker-v2-1",
+    "<Xverse>.sbtc-bond-staker-v2-2",
+    "<Xverse>.sbtc-bond-staker-v2-3",
+    "<Xverse>.sbtc-bond-staker-v2-4",
+    "<Xverse>.sbtc-bond-staker-v2-5"
   ],
   "operations": [
     {
       "order": 1,
       "type": "contract-publish",
       "lane": 0,
-      "contractName": "sbtc-bond-treasury-v1-0",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-0.clar",
-      "artifactSha256": "fd48061ba5990b2c0dd0175f33577cbd2d1b64d94a00e29d09516b1df7c7f18c",
+      "contractName": "sbtc-bond-treasury-v2-0",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-0.clar",
+      "artifactSha256": "2a9b65af4a596708c29add62a7fa430b26afb38957d9ffe50cbb7d4d346fa8ae",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -33,19 +33,19 @@
       "order": 2,
       "type": "contract-publish",
       "lane": 0,
-      "contractName": "sbtc-bond-staker-v1-0",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-0.clar",
-      "artifactSha256": "1c234bc81bdaa981797e9c67990322eb4680a41b4fc62d46ec7e9b753acc0f63",
+      "contractName": "sbtc-bond-staker-v2-0",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-0.clar",
+      "artifactSha256": "5401cad2c728d3f12bcfc51754f1db64c6e2d1b2a03d2b76ae4dd5012709548b",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-0"
+        "sbtc-bond-treasury-v2-0"
       ]
     },
     {
       "order": 3,
       "type": "contract-call-template",
       "lane": 0,
-      "contractName": "sbtc-bond-staker-v1-0",
+      "contractName": "sbtc-bond-staker-v2-0",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -59,16 +59,16 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-0"
+        "sbtc-bond-staker-v2-0"
       ]
     },
     {
       "order": 4,
       "type": "contract-publish",
       "lane": 1,
-      "contractName": "sbtc-bond-treasury-v1-1",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-1.clar",
-      "artifactSha256": "7f9221836a0db998dd2897cce60236d8496b6c2cfaab858a2a6767d1b48c038a",
+      "contractName": "sbtc-bond-treasury-v2-1",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-1.clar",
+      "artifactSha256": "a49484a449457ee35b003b86750f18d631472f5a6aaa107570cbd99fdd18177a",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -76,19 +76,19 @@
       "order": 5,
       "type": "contract-publish",
       "lane": 1,
-      "contractName": "sbtc-bond-staker-v1-1",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-1.clar",
-      "artifactSha256": "7b543d21c1c3c9808f12be3bbda999b417a7ec003f15ddde79efed2b0a083463",
+      "contractName": "sbtc-bond-staker-v2-1",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-1.clar",
+      "artifactSha256": "01b00cfba9f0122301e4cf74c2fd83f294afe5a49f8145af3c332e7f63ab9b13",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-1"
+        "sbtc-bond-treasury-v2-1"
       ]
     },
     {
       "order": 6,
       "type": "contract-call-template",
       "lane": 1,
-      "contractName": "sbtc-bond-staker-v1-1",
+      "contractName": "sbtc-bond-staker-v2-1",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -102,16 +102,16 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-1"
+        "sbtc-bond-staker-v2-1"
       ]
     },
     {
       "order": 7,
       "type": "contract-publish",
       "lane": 2,
-      "contractName": "sbtc-bond-treasury-v1-2",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-2.clar",
-      "artifactSha256": "42271f6d96fd727d497762f06b78c50504517ea25cd3887d1f97b312cd10d97d",
+      "contractName": "sbtc-bond-treasury-v2-2",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-2.clar",
+      "artifactSha256": "eef618ae1e79e1eea2bde5c0e5bcef74af51ad0e62e38ef8d70b2b03850902cc",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -119,19 +119,19 @@
       "order": 8,
       "type": "contract-publish",
       "lane": 2,
-      "contractName": "sbtc-bond-staker-v1-2",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-2.clar",
-      "artifactSha256": "480c3e3c1b4335403dcdd2333cf42f23d2cfa1fe87b97d8f19439dbd4f9b78e8",
+      "contractName": "sbtc-bond-staker-v2-2",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-2.clar",
+      "artifactSha256": "ee411fe5781e59d870cd19bf2c46aafa1a9656e0f8ff4bb686ead7093c958c3b",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-2"
+        "sbtc-bond-treasury-v2-2"
       ]
     },
     {
       "order": 9,
       "type": "contract-call-template",
       "lane": 2,
-      "contractName": "sbtc-bond-staker-v1-2",
+      "contractName": "sbtc-bond-staker-v2-2",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -145,16 +145,16 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-2"
+        "sbtc-bond-staker-v2-2"
       ]
     },
     {
       "order": 10,
       "type": "contract-publish",
       "lane": 3,
-      "contractName": "sbtc-bond-treasury-v1-3",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-3.clar",
-      "artifactSha256": "2785f43d12573ab8bcb5d9bfb42b35ab89a159f3509ae6887f6b94a4ac7ceccd",
+      "contractName": "sbtc-bond-treasury-v2-3",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-3.clar",
+      "artifactSha256": "e97bc2608257a6749247431d757aea38d3cbc91ce2ffe7f78ab4477d96f65bc1",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -162,19 +162,19 @@
       "order": 11,
       "type": "contract-publish",
       "lane": 3,
-      "contractName": "sbtc-bond-staker-v1-3",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-3.clar",
-      "artifactSha256": "9ebbac706d55e003962c703fb70d3b346fd271cab2938b6dd09e19b2117bda22",
+      "contractName": "sbtc-bond-staker-v2-3",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-3.clar",
+      "artifactSha256": "3134c51013ce4e1ec3bd96b1c323c280ccfdc6c61429301bb8cb89656c0f59d2",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-3"
+        "sbtc-bond-treasury-v2-3"
       ]
     },
     {
       "order": 12,
       "type": "contract-call-template",
       "lane": 3,
-      "contractName": "sbtc-bond-staker-v1-3",
+      "contractName": "sbtc-bond-staker-v2-3",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -188,16 +188,16 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-3"
+        "sbtc-bond-staker-v2-3"
       ]
     },
     {
       "order": 13,
       "type": "contract-publish",
       "lane": 4,
-      "contractName": "sbtc-bond-treasury-v1-4",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-4.clar",
-      "artifactSha256": "d6a208f0009aca18136d07007cd648a733b2172d67e81e1ddd7e0b31d8f4ab4f",
+      "contractName": "sbtc-bond-treasury-v2-4",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-4.clar",
+      "artifactSha256": "e1adf27d833d757ae10f9c20358e3a98d9547ec5b9609bd87980dd6dee44a632",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -205,19 +205,19 @@
       "order": 14,
       "type": "contract-publish",
       "lane": 4,
-      "contractName": "sbtc-bond-staker-v1-4",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-4.clar",
-      "artifactSha256": "efd628e70df18d363dc7e5508b8d5eeee1dea29d310d0b5efe2a754a2d880c57",
+      "contractName": "sbtc-bond-staker-v2-4",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-4.clar",
+      "artifactSha256": "02761615c9605cd43da3a820b114c06798f45b77df93f0f2623ce205f4a67a7b",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-4"
+        "sbtc-bond-treasury-v2-4"
       ]
     },
     {
       "order": 15,
       "type": "contract-call-template",
       "lane": 4,
-      "contractName": "sbtc-bond-staker-v1-4",
+      "contractName": "sbtc-bond-staker-v2-4",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -231,16 +231,16 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-4"
+        "sbtc-bond-staker-v2-4"
       ]
     },
     {
       "order": 16,
       "type": "contract-publish",
       "lane": 5,
-      "contractName": "sbtc-bond-treasury-v1-5",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v1-5.clar",
-      "artifactSha256": "4d18de43ee6b1e238c2a62d5008091a8c49538da05aa4c8b54c1ab7ef7f42ecf",
+      "contractName": "sbtc-bond-treasury-v2-5",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-treasury-v2-5.clar",
+      "artifactSha256": "bb0b2898b6118b050b2ab60a7687b1fefb7d88f7c30ef9051e0a592bf74a4f0c",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": []
     },
@@ -248,19 +248,19 @@
       "order": 17,
       "type": "contract-publish",
       "lane": 5,
-      "contractName": "sbtc-bond-staker-v1-5",
-      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v1-5.clar",
-      "artifactSha256": "069fbf611fc260cca137a0556960b4b248e9f0685e87e5234c54c53b486fcbef",
+      "contractName": "sbtc-bond-staker-v2-5",
+      "artifactPath": "contracts/generated/mainnet/sbtc-bond-staker-v2-5.clar",
+      "artifactSha256": "015b930bc3b12bd84e9c95481fea459d14b3b4da407d4114848e7624b45ad24c",
       "publisherInput": "xverseDeployerPrincipal",
       "dependsOn": [
-        "sbtc-bond-treasury-v1-5"
+        "sbtc-bond-treasury-v2-5"
       ]
     },
     {
       "order": 18,
       "type": "contract-call-template",
       "lane": 5,
-      "contractName": "sbtc-bond-staker-v1-5",
+      "contractName": "sbtc-bond-staker-v2-5",
       "function": "initialize",
       "senderInput": "xverseDeployerPrincipal",
       "arguments": [
@@ -274,7 +274,7 @@
         }
       ],
       "dependsOn": [
-        "sbtc-bond-staker-v1-5"
+        "sbtc-bond-staker-v2-5"
       ]
     }
   ],

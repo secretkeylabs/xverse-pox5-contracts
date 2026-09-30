@@ -7,6 +7,7 @@ import {
   avoidPreparePhase,
   bindNextBond,
   bootstrap,
+  boundBond,
   cancelExit,
   cancelRollover,
   claimPrincipal,
@@ -193,7 +194,7 @@ describe("member-initiated early sBTC withdrawal", () => {
     const replacementStart = Number(
       plain(
         simnet.callReadOnlyFn(
-          "sbtc-bond-staker-v1-0",
+          "sbtc-bond-staker-v2-0",
           "get-bound-bond",
           [],
           dave,
@@ -557,13 +558,13 @@ describe("member-initiated early sBTC withdrawal", () => {
   });
 
   it("rejects absent, zero, excessive, wrong-manager, exiting, and finished calls", () => {
-    const { bondStart } = bootstrap();
+    bootstrap();
     expect(deposit(alice, ALICE_SATS).type).toBe("ok");
     expect(unstakeEarly(alice, 1)).toBeErr(Cl.uint(107));
     expect(withdraw(alice).type).toBe("ok");
 
     expect(deposit(alice, ALICE_SATS).type).toBe("ok");
-    advanceToBurnHeight(bondStart - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake().type).toBe("ok");
     avoidPreparePhase();
     expect(unstakeEarly(bob, 1)).toBeErr(Cl.uint(110));
@@ -571,7 +572,7 @@ describe("member-initiated early sBTC withdrawal", () => {
     expect(unstakeEarly(alice, ALICE_SATS + 1)).toBeErr(Cl.uint(116));
     expect(
       simnet.callPublicFn(
-        "sbtc-bond-staker-v1-0",
+        "sbtc-bond-staker-v2-0",
         "unstake-sbtc-early",
         [
           Cl.principal(managerPrincipal()),
@@ -582,7 +583,7 @@ describe("member-initiated early sBTC withdrawal", () => {
     ).toBeErr(Cl.uint(116));
     expect(unstakeEarly(alice, 1, ALT_MANAGER)).toBeErr(Cl.uint(111));
     expect(simnet.callPublicFn(
-      "sbtc-bond-staker-v1-0",
+      "sbtc-bond-staker-v2-0",
       "request-exit",
       [],
       alice,

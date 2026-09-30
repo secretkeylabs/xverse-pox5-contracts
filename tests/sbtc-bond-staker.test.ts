@@ -150,12 +150,12 @@ describe("Xverse lane-0 initialization and launch", () => {
   });
 
   it("opens epoch zero with one share per deposited sat", () => {
-    const { bondStart } = bootstrap();
+    bootstrap();
     deposit(alice, ALICE_SATS);
     deposit(bob, BOB_SATS);
 
     expect(stake()).toBeErr(Cl.uint(108));
-    advanceToBurnHeight(bondStart - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake(carol).type).toBe("ok");
 
     expect(Number(epoch(0)["total-shares"])).toBe(POOL_SATS);
@@ -592,10 +592,10 @@ describe("rewards, wind-down, authority, and treasury isolation", () => {
   });
 
   it("keeps binding operator-only and staking permissionless", () => {
-    const { bondStart } = bootstrap();
+    bootstrap();
     expect(bindBond(BOND_INDEX, MAX_SATS, alice)).toBeErr(Cl.uint(100));
     deposit(alice, ALICE_SATS);
-    advanceToBurnHeight(bondStart - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake(carol).type).toBe("ok");
   });
 
