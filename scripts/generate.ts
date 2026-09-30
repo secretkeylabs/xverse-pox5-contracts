@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 
 export const CANONICAL_REVISION =
   "fa91d19053202b262d792485d4e13db179672eaa";
-export const CONTRACT_VERSION = "v1" as const;
+export const CONTRACT_VERSION = "v2" as const;
 export const LANES = [0, 1, 2, 3, 4, 5] as const;
 export const SIGNER_MANAGER_INPUTS = [
   "signerManagerPrincipal1",
@@ -125,12 +125,12 @@ export function validateNetworkSet(networks: readonly string[]) {
 function assertCanonicalSources(staker: string, treasury: string) {
   const requiredStakerTokens = [
     "(define-constant LANE_ID u0)",
-    ".sbtc-bond-treasury-v1-0",
+    ".sbtc-bond-treasury-v2-0",
     SOURCE_NETWORK.sbtcPrincipal,
     SOURCE_NETWORK.pox5Principal,
   ];
   const requiredTreasuryTokens = [
-    "(define-constant CONTROLLER .sbtc-bond-staker-v1-0)",
+    "(define-constant CONTROLLER .sbtc-bond-staker-v2-0)",
     SOURCE_NETWORK.sbtcPrincipal,
   ];
 
@@ -206,13 +206,13 @@ function renderContract(
       `(define-constant LANE_ID u${lane})`,
     );
     output = output.replaceAll(
-      ".sbtc-bond-treasury-v1-0",
-      `.sbtc-bond-treasury-v1-${lane}`,
+      ".sbtc-bond-treasury-v2-0",
+      `.sbtc-bond-treasury-v2-${lane}`,
     );
   } else {
     output = output.replaceAll(
-      ".sbtc-bond-staker-v1-0",
-      `.sbtc-bond-staker-v1-${lane}`,
+      ".sbtc-bond-staker-v2-0",
+      `.sbtc-bond-staker-v2-${lane}`,
     );
   }
 
@@ -259,7 +259,7 @@ export function validateGeneratedArtifact(
       throw new Error(`${record.relativePath} does not declare lane ${record.lane} exactly once`);
     }
     const treasuryReferences = [
-      ...content.matchAll(/\.sbtc-bond-treasury-v1-(\d+)/g),
+      ...content.matchAll(/\.sbtc-bond-treasury-v2-(\d+)/g),
     ];
     if (treasuryReferences.length === 0) {
       throw new Error(`${record.relativePath} has no treasury reference`);
@@ -269,7 +269,7 @@ export function validateGeneratedArtifact(
     }
   } else {
     const controllerReferences = [
-      ...content.matchAll(/\.sbtc-bond-staker-v1-(\d+)/g),
+      ...content.matchAll(/\.sbtc-bond-staker-v2-(\d+)/g),
     ];
     if (controllerReferences.length === 0) {
       throw new Error(`${record.relativePath} has no staker controller reference`);
@@ -278,7 +278,7 @@ export function validateGeneratedArtifact(
       throw new Error(`${record.relativePath} contains a cross-lane staker controller`);
     }
     if (!content.includes(
-      `(define-constant CONTROLLER .sbtc-bond-staker-v1-${record.lane})`,
+      `(define-constant CONTROLLER .sbtc-bond-staker-v2-${record.lane})`,
     )) {
       throw new Error(`${record.relativePath} does not authorize its same-lane staker`);
     }
@@ -401,7 +401,7 @@ function renderDeploymentInput(
         poolOperatorPrincipal: "initial keyed operator principal",
       },
       stakerPrincipalForms: LANES.map(
-        (lane) => `<Xverse>.sbtc-bond-staker-v1-${lane}`,
+        (lane) => `<Xverse>.sbtc-bond-staker-v2-${lane}`,
       ),
       operations,
       allowlistNote:
@@ -633,15 +633,15 @@ function validateSimnetPlan(root: string, artifacts: readonly ArtifactRecord[]) 
   }
 
   const generatedNames = [
-    ...plan.matchAll(/contract-name: (sbtc-bond-(?:treasury|staker)-v1-\d+)/g),
+    ...plan.matchAll(/contract-name: (sbtc-bond-(?:treasury|staker)-v2-\d+)/g),
   ].map((match) => match[1]);
   if (generatedNames.length !== 12 || new Set(generatedNames).size !== 12) {
     errors.push(`${SIMNET_PLAN_PATH} must contain exactly 12 unique lane contracts`);
   }
 
   for (const lane of LANES) {
-    const treasuryIndex = plan.indexOf(`contract-name: sbtc-bond-treasury-v1-${lane}`);
-    const stakerIndex = plan.indexOf(`contract-name: sbtc-bond-staker-v1-${lane}`);
+    const treasuryIndex = plan.indexOf(`contract-name: sbtc-bond-treasury-v2-${lane}`);
+    const stakerIndex = plan.indexOf(`contract-name: sbtc-bond-staker-v2-${lane}`);
     if (treasuryIndex < 0 || stakerIndex < 0 || treasuryIndex > stakerIndex) {
       errors.push(
         `${SIMNET_PLAN_PATH} must publish lane ${lane} treasury before staker`,

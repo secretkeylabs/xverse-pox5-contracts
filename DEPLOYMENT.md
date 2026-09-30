@@ -1,7 +1,10 @@
 # Six-lane deployment inputs
 
-The deterministic generator creates non-broadcast deployment inputs from
-canonical revision `fa91d19053202b262d792485d4e13db179672eaa`.
+The deterministic generator creates non-broadcast v2 deployment candidates,
+based on canonical revision `fa91d19053202b262d792485d4e13db179672eaa` with the
+configurable stake safety margin. Source hashes pin the modified candidate.
+V2 uses new staker and treasury names; no v1 deployment is overwritten or
+member position automatically migrated. Nothing has been broadcast.
 
 ## Exact contract and principal forms
 
@@ -11,12 +14,12 @@ mainnet, the canonical publisher is
 
 | Lane | Treasury contract | Staker contract | Mainnet PoX-5 allowlist principal |
 |---:|---|---|---|
-| 0 | `sbtc-bond-treasury-v1-0` | `sbtc-bond-staker-v1-0` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-0` |
-| 1 | `sbtc-bond-treasury-v1-1` | `sbtc-bond-staker-v1-1` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-1` |
-| 2 | `sbtc-bond-treasury-v1-2` | `sbtc-bond-staker-v1-2` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-2` |
-| 3 | `sbtc-bond-treasury-v1-3` | `sbtc-bond-staker-v1-3` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-3` |
-| 4 | `sbtc-bond-treasury-v1-4` | `sbtc-bond-staker-v1-4` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-4` |
-| 5 | `sbtc-bond-treasury-v1-5` | `sbtc-bond-staker-v1-5` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-5` |
+| 0 | `sbtc-bond-treasury-v2-0` | `sbtc-bond-staker-v2-0` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-0` |
+| 1 | `sbtc-bond-treasury-v2-1` | `sbtc-bond-staker-v2-1` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-1` |
+| 2 | `sbtc-bond-treasury-v2-2` | `sbtc-bond-staker-v2-2` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-2` |
+| 3 | `sbtc-bond-treasury-v2-3` | `sbtc-bond-staker-v2-3` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-3` |
+| 4 | `sbtc-bond-treasury-v2-4` | `sbtc-bond-staker-v2-4` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-4` |
+| 5 | `sbtc-bond-treasury-v2-5` | `sbtc-bond-staker-v2-5` | `SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-5` |
 
 `<Xverse>` in network-neutral generated metadata means the actual standard
 principal that publishes the contracts; for mainnet it resolves to the address
@@ -67,18 +70,18 @@ or wrong-network artifact.
 
 For every lane, generated deployment input orders:
 
-1. publish `sbtc-bond-treasury-v1-X`;
-2. publish `sbtc-bond-staker-v1-X`; and
-3. call `sbtc-bond-staker-v1-X.initialize` with its assigned registered signer
+1. publish `sbtc-bond-treasury-v2-X`;
+2. publish `sbtc-bond-staker-v2-X`; and
+3. call `sbtc-bond-staker-v2-X.initialize` with its assigned registered signer
    manager and the initial pool operator.
 
 The six lanes are distributed evenly across three signer-manager inputs:
 
 | Signer-manager input | Lane contracts |
 |---|---|
-| `signerManagerPrincipal1` | `sbtc-bond-staker-v1-0`, `sbtc-bond-staker-v1-3` |
-| `signerManagerPrincipal2` | `sbtc-bond-staker-v1-1`, `sbtc-bond-staker-v1-4` |
-| `signerManagerPrincipal3` | `sbtc-bond-staker-v1-2`, `sbtc-bond-staker-v1-5` |
+| `signerManagerPrincipal1` | `sbtc-bond-staker-v2-0`, `sbtc-bond-staker-v2-3` |
+| `signerManagerPrincipal2` | `sbtc-bond-staker-v2-1`, `sbtc-bond-staker-v2-4` |
+| `signerManagerPrincipal3` | `sbtc-bond-staker-v2-2`, `sbtc-bond-staker-v2-5` |
 
 The JSON files declare, but do not resolve, these controlled deployment inputs:
 

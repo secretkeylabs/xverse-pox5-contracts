@@ -6,6 +6,7 @@ import {
   advanceToBurnHeight,
   bindNextBond,
   bootstrap,
+  boundBond,
   claimRewards,
   commitRollover,
   deployer,
@@ -106,11 +107,11 @@ describe("PoX signer callback transition guard", () => {
   });
 
   it("protects signer registration updates without breaking rotation", () => {
-    const { bondStart } = bootstrap();
+    bootstrap();
     expect(registerSignerManager(CALLBACK_MANAGER, 3).type).toBe("ok");
     expect(trustSignerManager(CALLBACK_MANAGER).type).toBe("ok");
     expect(deposit(alice, INITIAL_SATS).type).toBe("ok");
-    advanceToBurnHeight(bondStart - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake().type).toBe("ok");
 
     expect(setValidationMode(1).type).toBe("ok");

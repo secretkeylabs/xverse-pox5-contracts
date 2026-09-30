@@ -5,10 +5,10 @@ bonds.
 
 ## Canonical scope
 
-The reviewed canonical implementation is the lane-0 development pair:
+The v2 implementation candidate is the lane-0 development pair:
 
-- `sbtc-bond-treasury-v1-0` — holds queued and released member sBTC principal;
-- `sbtc-bond-staker-v1-0` — deposits, full-position rollover commitments, epochs,
+- `sbtc-bond-treasury-v2-0` — holds queued and released member sBTC principal;
+- `sbtc-bond-staker-v2-0` — deposits, full-position rollover commitments, epochs,
   rewards, exits, claims, operators, and PoX-5 registration.
 
 The source files omit a lane suffix so they remain the only canonical
@@ -24,23 +24,24 @@ generator:
 or protocol-principal output. Canonical source and artifact hashes are recorded
 in `generated/artifact-manifest.json`.
 
-The deployed contract names are externally significant. The six isolated
-mainnet staker principals are:
+Contract names are externally significant. The six proposed v2 mainnet
+staker principals are shown below. Generating these artifacts does not deploy
+them or migrate positions from the existing v1 suite:
 
 ```text
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-0
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-1
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-2
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-3
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-4
-SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v1-5
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-0
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-1
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-2
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-3
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-4
+SP8HK160YD5GHXP69VGA0TC7AQJ1X4CDW3XVERSE.sbtc-bond-staker-v2-5
 ```
 
 The publisher also hosts the three reviewed `xverse-signer-manager-X`
 contracts. Reusing that standard principal with unique contract names is valid;
 the retired PoX-4 pool address has no role in this suite.
 
-Every lane has a dedicated `sbtc-bond-treasury-v1-X`, references only that sibling,
+Every lane has a dedicated `sbtc-bond-treasury-v2-X`, references only that sibling,
 and accepts only bond indexes where `index mod 6 = X`. See
 [DEPLOYMENT.md](DEPLOYMENT.md) for exact principal forms, network protocol
 principals, generated deployment inputs, the Bun mainnet deployment script,
@@ -116,6 +117,19 @@ after all shares leave has no member reward weight; `sync-rewards` classifies it
 as funded, permanently locked terminal dust without blocking STX wind-down.
 
 ## Commitment timing and principal recovery
+
+V2 replaces the fixed stake window with an operator-configurable safety margin,
+measured in burn blocks **before the exclusive prepare-phase deadline**, not
+before the bond start. It defaults to **80 blocks** (v1 left 188 blocks on
+mainnet). `get-stake-safety-margin` returns the configuration for future binds;
+`set-stake-safety-margin (margin uint)` is operator-only and emits a change event.
+Zero and values exceeding half a reward cycle minus the prepare-phase length
+are rejected with `u136`, keeping the opening inside PoX-5's rollover window.
+
+Each `bind-bond` snapshots the margin. `get-bound-bond` exposes that snapshot as
+`stake-safety-margin`; changing the configuration never moves a live bond's
+advertised cutoff. The 576-block binding notice and exclusive stake deadline
+remain unchanged. `stake` remains permissionless.
 
 The commitment cutoff is the later of the configured stake-window opening and
 the end of the binding notice period. Commitments require a burn height
