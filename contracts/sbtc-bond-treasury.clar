@@ -1,6 +1,6 @@
 ;; Xverse sBTC Bond Treasury - canonical lane-0 source
 ;;
-;; Holds the sBTC principal for `.sbtc-bond-staker-v1-0`. The generated six-lane
+;; Holds the sBTC principal for `.sbtc-bond-staker-v2-0`. The generated six-lane
 ;; suite rewrites only the lane id and paired contract names. Rewards never
 ;; enter this contract: any sBTC held by the staker is reward, while all queued
 ;; and released member principal is held here.
@@ -11,7 +11,7 @@
 (define-constant ERR_UNAUTHORIZED (err u200))
 
 ;; Canonical lane-0 controller. Generation rewrites the suffix for other lanes.
-(define-constant CONTROLLER .sbtc-bond-staker-v1-0)
+(define-constant CONTROLLER .sbtc-bond-staker-v2-0)
 
 (define-read-only (get-balance)
   (unwrap-panic (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token

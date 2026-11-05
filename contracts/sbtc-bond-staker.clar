@@ -92,6 +92,7 @@
 (define-constant ERR_COMMITMENT_CLOSED (err u133))
 (define-constant ERR_PROTOCOL_TRANSITION_ACTIVE (err u134))
 (define-constant ERR_REWARDS_PENDING (err u135))
+(define-constant ERR_INVALID_STAKE_MARGIN (err u136))
 
 ;;; Protocol constants -- these mirror pox-5 and are not deployment knobs
 
@@ -107,26 +108,20 @@
 ;; lanes 1-5. Every bound bond must have `index mod LANE_COUNT = LANE_ID`.
 (define-constant LANE_ID u0)
 (define-constant LANE_COUNT u6)
-(define-constant TREASURY .sbtc-bond-treasury-v1-0)
+(define-constant TREASURY .sbtc-bond-treasury-v2-0)
 
 ;; How much notice the members get of a bond the operator has bound, in burn
 ;; blocks. `stake` will not run until it has passed, so nobody is carried into
 ;; a bond they had no chance to read the terms of and `request-exit` from.
 ;;
 ;; ~4 days. It has to fit inside the window pox-5 allows for `setup-bond` --
-;; two cycles before the bond starts -- with the STAKE_WINDOW still to come
+;; two cycles before the bond starts -- with the stake margin still to come
 ;; after it, which it does on both mainnet (2100-block cycles) and testnet
 ;; (900).
 (define-constant BIND_NOTICE u576)
 
 ;; The one bond a launch floor may be set on: pox-5's first bond period.
 (define-constant GENESIS_BOND_INDEX u0)
-
-;; How long before the bond starts `stake` may be called, in burn blocks.
-;; ~2 days: long enough to get the transaction mined, short enough that
-;; deposits stay open for as long as possible. Comfortably inside pox-5's own
-;; roll-over window, which opens half a reward cycle before the bond starts.
-(define-constant STAKE_WINDOW u288)
 
 ;; Slack, in uSTX, held back when working out how many sats the pool's STX
 ;; can carry. `get-required-ustx` rounds twice, each time by less than one
@@ -146,6 +141,10 @@
 ;;; Configuration
 
 (define-data-var initialized bool false)
+
+;; Burn blocks between the stake-window opening and the exclusive PoX-5
+;; prepare-phase deadline. Operator changes apply only to future bindings.
+(define-data-var stake-safety-margin uint u80)
 
 ;; Who may bind bonds and move the pool between vetted signer managers. No
 ;; access to deposits, and no way to keep the pool from winding down: `stake`
@@ -198,6 +197,8 @@
 (define-data-var pending-start-height uint u0)
 ;; Exclusive deadline before PoX-5's prepare phase freezes the target cycle.
 (define-data-var pending-stake-deadline uint u0)
+;; Snapshot at bind time so operator changes cannot move a live cutoff.
+(define-data-var pending-stake-safety-margin uint u80)
 (define-data-var pending-unlock-height uint u0)
 
 ;; Each binding gets a fresh generation. Commitments are keyed by generation,
@@ -407,6 +408,7 @@
     min-ustx-ratio: (var-get pending-min-ustx-ratio),
     start-height: (var-get pending-start-height),
     unlock-burn-height: (var-get pending-unlock-height),
+    stake-safety-margin: (var-get pending-stake-safety-margin),
     stake-opens-at: (stake-window-start),
     stake-closes-at: (var-get pending-stake-deadline),
     rollover-cutoff: (rollover-cutoff),
@@ -611,7 +613,7 @@
 )
 
 (define-read-only (get-treasury-balance)
-  (contract-call? .sbtc-bond-treasury-v1-0 get-balance)
+  (contract-call? .sbtc-bond-treasury-v2-0 get-balance)
 )
 
 (define-private (get-sbtc-balance)
@@ -636,10 +638,17 @@
   )
 )
 
+(define-read-only (get-stake-safety-margin)
+  (var-get stake-safety-margin)
+)
+
 (define-read-only (stake-window-start)
-  (let ((start (var-get pending-start-height)))
-    (if (> start STAKE_WINDOW)
-      (- start STAKE_WINDOW)
+  (let (
+      (deadline (var-get pending-stake-deadline))
+      (margin (var-get pending-stake-safety-margin))
+    )
+    (if (> deadline margin)
+      (- deadline margin)
       u0
     )
   )
@@ -931,8 +940,9 @@
           (- start-height prepare-length)
           u0
         ))
-        (window-start (if (> start-height STAKE_WINDOW)
-          (- start-height STAKE_WINDOW)
+        (margin (var-get stake-safety-margin))
+        (window-start (if (> stake-deadline margin)
+          (- stake-deadline margin)
           u0
         ))
         (notice-ends (+ burn-block-height BIND_NOTICE))
@@ -979,6 +989,7 @@
       (var-set committed-added-ustx u0)
       (var-set pending-generation (+ (var-get pending-generation) u1))
 
+      (var-set pending-stake-safety-margin margin)
       (var-set pending-bond-index index)
       (var-set pending-max-sats allocation-sats)
       (var-set pending-min-sats min-sats)
@@ -1214,7 +1225,7 @@
 
     ;; PoX-5 transfers only the net sBTC difference for this same principal.
     (if (> sats custodied)
-      (try! (contract-call? .sbtc-bond-treasury-v1-0 payout (- sats custodied)
+      (try! (contract-call? .sbtc-bond-treasury-v2-0 payout (- sats custodied)
         current-contract
       ))
       u0
@@ -1236,7 +1247,7 @@
           ))))
           (if (< sats custodied)
             (try! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-              transfer (- custodied sats) tx-sender .sbtc-bond-treasury-v1-0
+              transfer (- custodied sats) tx-sender .sbtc-bond-treasury-v2-0
               none
             ))
             true
@@ -1349,7 +1360,7 @@
               manager sats
             ))))
             (try! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-              transfer sats tx-sender .sbtc-bond-treasury-v1-0 none
+              transfer sats tx-sender .sbtc-bond-treasury-v2-0 none
             ))
             unstaked
           )))
@@ -1402,6 +1413,36 @@
       (var-set protocol-transition-active false)
       (print (merge { topic: "update-bond-registration" } result))
       (ok result)
+    )
+  )
+)
+
+;;; Stake timing configuration
+
+;; Preserve PoX-5's half-cycle rollover window and at least one executable
+;; block. Existing bindings retain their advertised margin and cutoff.
+(define-public (set-stake-safety-margin (margin uint))
+  (begin
+    (try! (assert-no-protocol-transition))
+    (try! (authorize-operator))
+    (let (
+        (pox-info (unwrap!
+          (contract-call? 'ST000000000000000000002AMW42H.pox-5 get-pox-info)
+          ERR_INVALID_STAKE_MARGIN
+        ))
+        (half-cycle (/ (get reward-cycle-length pox-info) u2))
+        (prepare-length (get prepare-cycle-length pox-info))
+      )
+      (asserts! (> half-cycle prepare-length) ERR_INVALID_STAKE_MARGIN)
+      (asserts! (and (> margin u0) (<= margin (- half-cycle prepare-length)))
+        ERR_INVALID_STAKE_MARGIN
+      )
+      (var-set stake-safety-margin margin)
+      (print {
+        topic: "set-stake-safety-margin",
+        margin: margin,
+      })
+      (ok margin)
     )
   )
 )
@@ -1612,7 +1653,7 @@
               manager sats
             ))))
             (try! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-              transfer sats tx-sender .sbtc-bond-treasury-v1-0 none
+              transfer sats tx-sender .sbtc-bond-treasury-v2-0 none
             ))
             removed
           )))))
@@ -1966,7 +2007,7 @@
     (try! (assert-no-protocol-transition))
     (try! (authorize-operator))
     (asserts! (> amount u0) ERR_NOTHING_TO_CLAIM)
-    (try! (contract-call? .sbtc-bond-treasury-v1-0 payout amount recipient))
+    (try! (contract-call? .sbtc-bond-treasury-v2-0 payout amount recipient))
     (print {
       topic: "sweep-unattributed-principal",
       amount: amount,
@@ -2029,7 +2070,7 @@
   (begin
     (if (> sats u0)
       (try! (contract-call? 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-        transfer sats depositor .sbtc-bond-treasury-v1-0 none
+        transfer sats depositor .sbtc-bond-treasury-v2-0 none
       ))
       true
     )
@@ -2100,7 +2141,7 @@
   )
   (begin
     (if (> sats u0)
-      (try! (contract-call? .sbtc-bond-treasury-v1-0 payout sats recipient))
+      (try! (contract-call? .sbtc-bond-treasury-v2-0 payout sats recipient))
       u0
     )
     (if (> ustx u0)

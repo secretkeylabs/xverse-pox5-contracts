@@ -25,7 +25,8 @@ wind-down.
 ## Authorities
 
 The deployer initializes once. Keyed operators may bind a configured PoX-5 bond,
-rotate the operator set, maintain the trusted signer-code-hash set, update a live
+rotate the operator set, configure the safety margin for future bond bindings,
+maintain the trusted signer-code-hash set, update a live
 registration to a manager whose epoch-count eligibility has matured, and sweep only treasury
 sBTC above accounted principal. Operators cannot select claim recipients for
 member principal or rewards. The enabled operator set can be rotated but cannot
@@ -93,6 +94,17 @@ recognizes the complete snapshot surplus, but a new transfer between that call
 and the non-atomic withdrawal can re-trigger the guard. This does not identify
 the true earning epoch of an untagged late payout and does not replace prompt
 keeper operation.
+
+### Configurable stake timing
+
+V2 defaults to 80 burn blocks before the exclusive prepare-phase deadline.
+Operators may select a positive margin up to half a reward cycle minus the
+prepare-phase length. A shorter margin reduces keeper inclusion time and may
+increase missed-stake risk. Each binding snapshots its margin; later operator
+updates cannot change that binding's commitment/cancellation cutoff. The
+576-block bind notice and exclusive deadline remain enforced, and staking is
+still permissionless. Operational monitoring must use the live bond's
+`rollover-cutoff` and `stake-closes-at`, not the configuration for future binds.
 
 ### Commitment snapshots and delayed STX
 

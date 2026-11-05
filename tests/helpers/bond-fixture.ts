@@ -10,8 +10,8 @@ import {
 export const POX5 = "ST000000000000000000002AMW42H.pox-5";
 export const SBTC_DEPLOYER = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4";
 export const SBTC = `${SBTC_DEPLOYER}.sbtc-token`;
-export const POOL = "sbtc-bond-staker-v1-0";
-export const TREASURY = "sbtc-bond-treasury-v1-0";
+export const POOL = "sbtc-bond-staker-v2-0";
+export const TREASURY = "sbtc-bond-treasury-v2-0";
 export const MANAGER = "test-signer-manager";
 export const ALT_MANAGER = "test-signer-manager-alt";
 export const CALLBACK_MANAGER = "test-signer-manager-callback";
@@ -421,7 +421,7 @@ export function stakeFirstBond(
 ) {
   const { bondStart, unlockHeight } = bootstrap(MAX_SATS, manager);
   for (const [who, sats] of deposits) expectOk(deposit(who, sats), "deposit");
-  advanceToBurnHeight(bondStart - 288);
+  advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
   expectOk(stake(deployer, manager), "stake first bond");
   return { bondStart, unlockHeight };
 }

@@ -9,7 +9,6 @@ import {
   advanceToBurnHeight,
   bindBond,
   bindNextBond,
-  bondStartHeight,
   bootstrap,
   boundBond,
   cancelExit,
@@ -581,7 +580,7 @@ describe("retained financial and control paths", () => {
     );
     expect(bindBond().type).toBe("ok");
     expect(deposit(alice, 1).type).toBe("ok");
-    advanceToBurnHeight(bondStartHeight(BOND_INDEX) - 288);
+    advanceToBurnHeight(Number(boundBond()["rollover-cutoff"]));
     expect(stake().type).toBe("ok");
   });
 

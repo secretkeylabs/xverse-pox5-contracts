@@ -5,7 +5,6 @@ import {
   MANAGER,
   POX5,
   advanceToBurnHeight,
-  bondStartHeight,
   expectOk,
   managerPrincipal,
   registerSignerManager,
@@ -52,7 +51,7 @@ describe("six-lane PoX-5 rollover simulation", () => {
       setupLaneBond(lane, index);
       expectOk(bindLane(lane, index), `bind initial lane ${lane}`);
       expectOk(depositLane(lane, alice, sats), `deposit initial lane ${lane}`);
-      advanceToBurnHeight(bondStartHeight(index) - 288);
+      advanceToBurnHeight(Number(laneBoundBond(lane)["rollover-cutoff"]));
       expectOk(stakeLane(lane, keeper), `stake initial lane ${lane}`);
 
       const membership = laneMembership(lane);
