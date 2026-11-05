@@ -24,13 +24,16 @@ import {
   laneMembership,
   lanePool,
   laneRequiredUstx,
+  laneSettledMember,
   laneTreasuryBalance,
   setupLaneBond,
+  stakeInitialLane,
   stakeLane,
 } from "./helpers/six-lane-fixture";
 
 const accounts = simnet.getAccounts();
 const alice = accounts.get("wallet_1")!;
+const bob = accounts.get("wallet_2")!;
 const keeper = accounts.get("wallet_4")!;
 const INITIAL_INDEX = 6;
 
@@ -154,5 +157,60 @@ describe("six-lane PoX-5 rollover simulation", () => {
         managerPrincipal(lane === 0 ? ALT_MANAGER : MANAGER),
       );
     }
+  });
+
+  it("lets an incumbent join another lane as a newcomer without lane-0 drift", () => {
+    initializeLanes([0, 1]);
+
+    // alice is an incumbent only on lane 0; lane 1 has its own established epoch.
+    stakeInitialLane(0, 6, [[alice, 10_000]]);
+    stakeInitialLane(1, 7, [[bob, 20_000]]);
+
+    // Roll alice's lane 0 position to its next bond first.
+    setupLaneBond(0, 12);
+    expectOk(bindLane(0, 12), "bind lane 0 successor");
+    expectOk(commitLane(0, alice, 100), "commit incumbent lane 0");
+    advanceToBurnHeight(Number(laneBoundBond(0)["rollover-cutoff"]));
+    expectOk(stakeLane(0, keeper), "roll lane 0");
+    expect(n(laneMembership(0), "bond-index")).toBe(12);
+    expect(n(laneSettledMember(0, alice), "bonded-sats")).toBe(10_100);
+
+    const lane0Snapshot = () => ({
+      config: laneConfig(0),
+      pool: lanePool(0),
+      membership: laneMembership(0),
+      treasury: laneTreasuryBalance(0),
+    });
+    const lane0Before = lane0Snapshot();
+    const lane0MemberBefore = laneSettledMember(0, alice);
+
+    // alice has no lane-1 bonded position, so this is a newcomer commitment.
+    const newcomerSats = 5_000;
+    const nextLane1Index = 13;
+    setupLaneBond(1, nextLane1Index);
+    expectOk(bindLane(1, nextLane1Index), "bind lane 1 successor");
+    expectOk(commitLane(1, alice, newcomerSats), "commit newcomer lane 1");
+    expect(n(lanePool(1), "queued-sats")).toBe(newcomerSats);
+    expect(laneTreasuryBalance(1)).toBe(newcomerSats);
+    expect(lane0Snapshot()).toEqual(lane0Before);
+
+    advanceToBurnHeight(Number(laneBoundBond(1)["rollover-cutoff"]));
+    expectOk(stakeLane(1, keeper), "roll lane 1 with newcomer");
+    expect(n(laneMembership(1), "bond-index")).toBe(nextLane1Index);
+    expect(n(laneSettledMember(1, alice), "bonded-sats")).toBe(newcomerSats);
+    expect(n(lanePool(1), "bonded-sats")).toBe(newcomerSats);
+    // The lane's previous non-committing member is released, not alice's lane 0.
+    expect(n(laneSettledMember(1, bob), "released-sats")).toBe(20_000);
+    expect(laneTreasuryBalance(1)).toBe(20_000);
+
+    // Both positions remain active and lane 0 is byte-for-byte unchanged.
+    expect(n(laneMembership(0), "bond-index")).toBe(12);
+    expect(n(laneMembership(1), "bond-index")).toBe(nextLane1Index);
+    for (const field of ["bonded-sats", "bonded-ustx", "shares"] as const) {
+      expect(n(laneSettledMember(0, alice), field)).toBe(
+        n(lane0MemberBefore, field),
+      );
+    }
+    expect(lane0Snapshot()).toEqual(lane0Before);
   });
 });
